@@ -59,7 +59,6 @@ import java.util.regex.Pattern;
         case EXTRAPOLATE_TYPE_EXTEND:
           break;
         default:
-          return;
           // throw new JSApplicationIllegalArgumentException(
           //     "Invalid extrapolation type " + extrapolateLeft + "for left extrapolation");
       }
@@ -75,7 +74,6 @@ import java.util.regex.Pattern;
         case EXTRAPOLATE_TYPE_EXTEND:
           break;
         default:
-          return;
           // throw new JSApplicationIllegalArgumentException(
           //     "Invalid extrapolation type " + extrapolateRight + "for right extrapolation");
       }
