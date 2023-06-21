@@ -46,8 +46,9 @@ import java.util.Map;
 
   public void connectToView(int viewTag, UIManager uiManager) {
     if (mConnectedViewTag != -1) {
-      throw new JSApplicationIllegalArgumentException(
-          "Animated node " + mTag + " is " + "already attached to a view: " + mConnectedViewTag);
+      // throw new JSApplicationIllegalArgumentException(
+      //     "Animated node " + mTag + " is " + "already attached to a view: " + mConnectedViewTag);
+      return;
     }
     mConnectedViewTag = viewTag;
     mUIManager = uiManager;
@@ -55,12 +56,13 @@ import java.util.Map;
 
   public void disconnectFromView(int viewTag) {
     if (mConnectedViewTag != viewTag && mConnectedViewTag != -1) {
-      throw new JSApplicationIllegalArgumentException(
-          "Attempting to disconnect view that has "
-              + "not been connected with the given animated node: "
-              + viewTag
-              + " but is connected to view "
-              + mConnectedViewTag);
+      // throw new JSApplicationIllegalArgumentException(
+      //     "Attempting to disconnect view that has "
+      //         + "not been connected with the given animated node: "
+      //         + viewTag
+      //         + " but is connected to view "
+      //         + mConnectedViewTag);
+      return;
     }
 
     mConnectedViewTag = -1;
@@ -95,7 +97,8 @@ import java.util.Map;
     for (Map.Entry<String, Integer> entry : mPropNodeMapping.entrySet()) {
       @Nullable AnimatedNode node = mNativeAnimatedNodesManager.getNodeById(entry.getValue());
       if (node == null) {
-        throw new IllegalArgumentException("Mapped property node does not exists");
+        // throw new IllegalArgumentException("Mapped property node does not exists");
+        return;
       } else if (node instanceof StyleAnimatedNode) {
         ((StyleAnimatedNode) node).collectViewUpdates(mPropMap);
       } else if (node instanceof ValueAnimatedNode) {
@@ -106,8 +109,9 @@ import java.util.Map;
           mPropMap.putDouble(entry.getKey(), ((ValueAnimatedNode) node).getValue());
         }
       } else {
-        throw new IllegalArgumentException(
-            "Unsupported type of node used in property node " + node.getClass());
+        // throw new IllegalArgumentException(
+        //     "Unsupported type of node used in property node " + node.getClass());
+        return;
       }
     }
 

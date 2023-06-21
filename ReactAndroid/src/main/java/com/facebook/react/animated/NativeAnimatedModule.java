@@ -152,7 +152,7 @@ public class NativeAnimatedModule extends NativeAnimatedModuleSpec
                       ReactChoreographer.CallbackType.NATIVE_ANIMATED_MODULE,
                       mAnimatedFrameCallback);
             } catch (Exception ex) {
-              throw new RuntimeException(ex);
+              // throw new RuntimeException(ex);
             }
           }
         };
