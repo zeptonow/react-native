@@ -91,6 +91,8 @@ package-lock.json
 /React/FBReactNativeSpec/**/*.xcodeproj
 /packages/react-native-codegen/**/*.xcodeproj
 
+
+
 # Ruby Gems (Bundler)
 /vendor
 /template/vendor
@@ -107,7 +109,7 @@ package-lock.json
 
 # react-native-codegen
 /React/FBReactNativeSpec/FBReactNativeSpec
-/packages/react-native-codegen/lib
+# /packages/react-native-codegen/lib
 /ReactCommon/react/renderer/components/rncore/
 /packages/rn-tester/NativeModuleExample/ScreenshotManagerSpec*
 
