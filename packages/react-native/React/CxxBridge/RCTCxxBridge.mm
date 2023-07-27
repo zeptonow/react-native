@@ -114,26 +114,18 @@ class GetDescAdapter : public JSExecutorFactory {
 
 }
 
-static void notifyAboutModuleSetup(RCTPerformanceLogger *performanceLogger, const char *tag)
-{
-  NSString *moduleName = [[NSString alloc] initWithUTF8String:tag];
-  if (moduleName) {
-    int64_t setupTime = [performanceLogger durationForTag:RCTPLNativeModuleSetup];
-    [[NSNotificationCenter defaultCenter] postNotificationName:RCTDidSetupModuleNotification
-                                                        object:nil
-                                                      userInfo:@{
-                                                        RCTDidSetupModuleNotificationModuleNameKey : moduleName,
-                                                        RCTDidSetupModuleNotificationSetupTimeKey : @(setupTime)
-                                                      }];
-  }
-}
-
 static void mapReactMarkerToPerformanceLogger(
     const ReactMarker::ReactMarkerId markerId,
     RCTPerformanceLogger *performanceLogger,
     const char *tag)
 {
   switch (markerId) {
+    case ReactMarker::APP_STARTUP_START:
+      [performanceLogger markStartForTag:RCTPLAppStartup];
+      break;
+    case ReactMarker::APP_STARTUP_STOP:
+      [performanceLogger markStopForTag:RCTPLAppStartup];
+      break;
     case ReactMarker::RUN_JS_BUNDLE_START:
       [performanceLogger markStartForTag:RCTPLScriptExecution];
       break;
@@ -152,7 +144,6 @@ static void mapReactMarkerToPerformanceLogger(
       break;
     case ReactMarker::NATIVE_MODULE_SETUP_STOP:
       [performanceLogger markStopForTag:RCTPLNativeModuleSetup];
-      notifyAboutModuleSetup(performanceLogger, tag);
       break;
       // Not needed in bridge mode.
     case ReactMarker::REACT_INSTANCE_INIT_START:
@@ -245,14 +236,12 @@ struct RCTInstanceCallback : public InstanceCallback {
   [_objCModuleRegistry setTurboModuleRegistry:_turboModuleRegistry];
 }
 
-- (void)attachBridgeAPIsToObjCModule:(id<RCTBridgeModule>)module
+- (RCTBridgeModuleDecorator *)bridgeModuleDecorator
 {
-  RCTBridgeModuleDecorator *bridgeModuleDecorator =
-      [[RCTBridgeModuleDecorator alloc] initWithViewRegistry:_viewRegistry_DEPRECATED
-                                              moduleRegistry:_objCModuleRegistry
-                                               bundleManager:_bundleManager
-                                           callableJSModules:_callableJSModules];
-  [bridgeModuleDecorator attachInteropAPIsToModule:module];
+  return [[RCTBridgeModuleDecorator alloc] initWithViewRegistry:_viewRegistry_DEPRECATED
+                                                 moduleRegistry:_objCModuleRegistry
+                                                  bundleManager:_bundleManager
+                                              callableJSModules:_callableJSModules];
 }
 
 - (std::shared_ptr<MessageQueueThread>)jsMessageThread
@@ -1026,9 +1015,7 @@ struct RCTInstanceCallback : public InstanceCallback {
         if (self.valid && ![moduleData.moduleClass isSubclassOfClass:[RCTCxxModule class]]) {
           [self->_performanceLogger appendStartForTag:RCTPLNativeModuleMainThread];
           (void)[moduleData instance];
-          if (!RCTIsMainQueueExecutionOfConstantsToExportDisabled()) {
-            [moduleData gatherConstants];
-          }
+          [moduleData gatherConstants];
           [self->_performanceLogger appendStopForTag:RCTPLNativeModuleMainThread];
         }
       };

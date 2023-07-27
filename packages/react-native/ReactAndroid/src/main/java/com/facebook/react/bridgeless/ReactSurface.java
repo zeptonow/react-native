@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.View.MeasureSpec;
+import android.view.ViewGroup;
 import androidx.annotation.UiThread;
 import com.facebook.infer.annotation.Nullsafe;
 import com.facebook.infer.annotation.ThreadSafe;
@@ -21,9 +22,10 @@ import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.bridgeless.internal.bolts.Task;
 import com.facebook.react.common.annotations.VisibleForTesting;
-import com.facebook.react.fabric.SurfaceHandler;
 import com.facebook.react.fabric.SurfaceHandlerBinding;
+import com.facebook.react.fabric.interfaces.SurfaceHandler;
 import com.facebook.react.interfaces.ReactSurfaceInterface;
+import com.facebook.react.interfaces.TaskInterface;
 import com.facebook.react.modules.i18nmanager.I18nUtil;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import java.util.concurrent.atomic.AtomicReference;
@@ -130,11 +132,13 @@ public class ReactSurface implements ReactSurfaceInterface {
     return mSurfaceHandler;
   }
 
-  public @Nullable ReactSurfaceView getView() {
+  @Override
+  public @Nullable ViewGroup getView() {
     return mSurfaceView.get();
   }
 
-  public Task<Void> prerender() {
+  @Override
+  public TaskInterface<Void> prerender() {
     ReactHost host = mReactHost.get();
     if (host == null) {
       return Task.forError(
@@ -144,7 +148,8 @@ public class ReactSurface implements ReactSurfaceInterface {
     return host.prerenderSurface(this);
   }
 
-  public Task<Void> start() {
+  @Override
+  public TaskInterface<Void> start() {
     if (mSurfaceView.get() == null) {
       return Task.forError(
           new IllegalStateException(
@@ -160,7 +165,8 @@ public class ReactSurface implements ReactSurfaceInterface {
     return host.startSurface(this);
   }
 
-  public Task<Void> stop() {
+  @Override
+  public TaskInterface<Void> stop() {
     ReactHost host = mReactHost.get();
     if (host == null) {
       return Task.forError(
@@ -181,7 +187,7 @@ public class ReactSurface implements ReactSurfaceInterface {
   public void clear() {
     UiThreadUtil.runOnUiThread(
         () -> {
-          ReactSurfaceView view = getView();
+          ReactSurfaceView view = (ReactSurfaceView) getView();
           if (view != null) {
             view.removeAllViews();
             view.setId(View.NO_ID);
