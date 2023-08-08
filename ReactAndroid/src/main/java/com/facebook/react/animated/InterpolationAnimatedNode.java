@@ -212,6 +212,7 @@ import java.util.regex.Pattern;
     if (parent != mParent) {
       //PATCH: COMMENTED
       // throw new IllegalArgumentException("Invalid parent node provided");
+      return;
     }
     mParent = null;
   }
