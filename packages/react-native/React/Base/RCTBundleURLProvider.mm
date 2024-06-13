@@ -7,9 +7,12 @@
 
 #import "RCTBundleURLProvider.h"
 
+#import "RCTConstants.h"
 #import "RCTConvert.h"
 #import "RCTDefines.h"
 #import "RCTLog.h"
+
+#import <jsinspector-modern/InspectorFlags.h>
 
 NSString *const RCTBundleURLProviderUpdatedNotification = @"RCTBundleURLProviderUpdatedNotification";
 
@@ -22,7 +25,6 @@ void RCTBundleURLProviderAllowPackagerServerAccess(BOOL allowed)
   kRCTAllowPackagerAccess = allowed;
 }
 #endif
-static NSString *const kRCTPlatformName = @"ios";
 static NSString *const kRCTPackagerSchemeKey = @"RCT_packager_scheme";
 static NSString *const kRCTJsLocationKey = @"RCT_jsLocation";
 static NSString *const kRCTEnableDevKey = @"RCT_enableDev";
@@ -249,23 +251,7 @@ static NSURL *serverRootWithHostPort(NSString *hostPort, NSString *scheme)
                        packagerHost:(NSString *)packagerHost
                           enableDev:(BOOL)enableDev
                  enableMinification:(BOOL)enableMinification
-{
-  return [self jsBundleURLForBundleRoot:bundleRoot
-                           packagerHost:packagerHost
-                         packagerScheme:nil
-                              enableDev:enableDev
-                     enableMinification:enableMinification
-                        inlineSourceMap:NO
-                            modulesOnly:NO
-                              runModule:YES];
-}
-
-+ (NSURL *)jsBundleURLForBundleRoot:(NSString *)bundleRoot
-                       packagerHost:(NSString *)packagerHost
-                          enableDev:(BOOL)enableDev
-                 enableMinification:(BOOL)enableMinification
                     inlineSourceMap:(BOOL)inlineSourceMap
-
 {
   return [self jsBundleURLForBundleRoot:bundleRoot
                            packagerHost:packagerHost
@@ -282,24 +268,6 @@ static NSURL *serverRootWithHostPort(NSString *hostPort, NSString *scheme)
                      packagerScheme:(NSString *)scheme
                           enableDev:(BOOL)enableDev
                  enableMinification:(BOOL)enableMinification
-                        modulesOnly:(BOOL)modulesOnly
-                          runModule:(BOOL)runModule
-{
-  return [self jsBundleURLForBundleRoot:bundleRoot
-                           packagerHost:packagerHost
-                         packagerScheme:nil
-                              enableDev:enableDev
-                     enableMinification:enableMinification
-                        inlineSourceMap:NO
-                            modulesOnly:modulesOnly
-                              runModule:runModule];
-}
-
-+ (NSURL *)jsBundleURLForBundleRoot:(NSString *)bundleRoot
-                       packagerHost:(NSString *)packagerHost
-                     packagerScheme:(NSString *)scheme
-                          enableDev:(BOOL)enableDev
-                 enableMinification:(BOOL)enableMinification
                     inlineSourceMap:(BOOL)inlineSourceMap
                         modulesOnly:(BOOL)modulesOnly
                           runModule:(BOOL)runModule
@@ -307,7 +275,7 @@ static NSURL *serverRootWithHostPort(NSString *hostPort, NSString *scheme)
   NSString *path = [NSString stringWithFormat:@"/%@.bundle", bundleRoot];
   BOOL lazy = enableDev;
   NSArray<NSURLQueryItem *> *queryItems = @[
-    [[NSURLQueryItem alloc] initWithName:@"platform" value:kRCTPlatformName],
+    [[NSURLQueryItem alloc] initWithName:@"platform" value:RCTPlatformName],
     [[NSURLQueryItem alloc] initWithName:@"dev" value:enableDev ? @"true" : @"false"],
     [[NSURLQueryItem alloc] initWithName:@"lazy" value:lazy ? @"true" : @"false"],
     [[NSURLQueryItem alloc] initWithName:@"minify" value:enableMinification ? @"true" : @"false"],
@@ -315,6 +283,12 @@ static NSURL *serverRootWithHostPort(NSString *hostPort, NSString *scheme)
     [[NSURLQueryItem alloc] initWithName:@"modulesOnly" value:modulesOnly ? @"true" : @"false"],
     [[NSURLQueryItem alloc] initWithName:@"runModule" value:runModule ? @"true" : @"false"],
   ];
+  auto &inspectorFlags = facebook::react::jsinspector_modern::InspectorFlags::getInstance();
+  if (inspectorFlags.getFuseboxEnabled()) {
+    queryItems = [queryItems arrayByAddingObject:[[NSURLQueryItem alloc] initWithName:@"excludeSource" value:@"true"]];
+    queryItems = [queryItems arrayByAddingObject:[[NSURLQueryItem alloc] initWithName:@"sourcePaths"
+                                                                                value:@"url-server"]];
+  }
 
   NSString *bundleID = [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString *)kCFBundleIdentifierKey];
   if (bundleID) {

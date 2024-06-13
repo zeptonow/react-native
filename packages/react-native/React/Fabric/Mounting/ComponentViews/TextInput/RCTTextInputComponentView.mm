@@ -27,6 +27,8 @@ using namespace facebook::react;
 @interface RCTTextInputComponentView () <RCTBackedTextInputDelegate, RCTTextInputViewProtocol>
 @end
 
+static NSSet<NSNumber *> *returnKeyTypesSet;
+
 @implementation RCTTextInputComponentView {
   TextInputShadowNode::ConcreteState::Shared _state;
   UIView<RCTBackedTextInputViewProtocol> *_backedTextInputView;
@@ -62,16 +64,17 @@ using namespace facebook::react;
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<TextInputProps const>();
+    const auto &defaultProps = TextInputShadowNode::defaultSharedProps();
     _props = defaultProps;
-    auto &props = *defaultProps;
 
-    _backedTextInputView = props.traits.multiline ? [RCTUITextView new] : [RCTUITextField new];
+    _backedTextInputView = defaultProps->traits.multiline ? [RCTUITextView new] : [RCTUITextField new];
     _backedTextInputView.textInputDelegate = self;
     _ignoreNextTextInputCall = NO;
     _comingFromJS = NO;
     _didMoveToWindow = NO;
+
     [self addSubview:_backedTextInputView];
+    [self initializeReturnKeyType];
   }
 
   return self;
@@ -82,12 +85,14 @@ using namespace facebook::react;
   [super didMoveToWindow];
 
   if (self.window && !_didMoveToWindow) {
-    const auto &props = static_cast<TextInputProps const &>(*_props);
+    const auto &props = static_cast<const TextInputProps &>(*_props);
     if (props.autoFocus) {
       [_backedTextInputView becomeFirstResponder];
     }
     _didMoveToWindow = YES;
+    [self initializeReturnKeyType];
   }
+
   [self _restoreTextSelection];
 }
 
@@ -105,10 +110,10 @@ using namespace facebook::react;
   return concreteComponentDescriptorProvider<TextInputComponentDescriptor>();
 }
 
-- (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
+- (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
 {
-  const auto &oldTextInputProps = static_cast<TextInputProps const &>(*_props);
-  const auto &newTextInputProps = static_cast<TextInputProps const &>(*props);
+  const auto &oldTextInputProps = static_cast<const TextInputProps &>(*_props);
+  const auto &newTextInputProps = static_cast<const TextInputProps &>(*props);
 
   // Traits:
   if (newTextInputProps.traits.multiline != oldTextInputProps.traits.multiline) {
@@ -215,9 +220,9 @@ using namespace facebook::react;
   [self setDefaultInputAccessoryView];
 }
 
-- (void)updateState:(State::Shared const &)state oldState:(State::Shared const &)oldState
+- (void)updateState:(const State::Shared &)state oldState:(const State::Shared &)oldState
 {
-  _state = std::static_pointer_cast<TextInputShadowNode::ConcreteState const>(state);
+  _state = std::static_pointer_cast<const TextInputShadowNode::ConcreteState>(state);
 
   if (!_state) {
     assert(false && "State is `null` for <TextInput> component.");
@@ -238,8 +243,8 @@ using namespace facebook::react;
   }
 }
 
-- (void)updateLayoutMetrics:(LayoutMetrics const &)layoutMetrics
-           oldLayoutMetrics:(LayoutMetrics const &)oldLayoutMetrics
+- (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+           oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics
 {
   [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
 
@@ -249,7 +254,7 @@ using namespace facebook::react;
       RCTUIEdgeInsetsFromEdgeInsets(layoutMetrics.contentInsets - layoutMetrics.borderWidth);
 
   if (_eventEmitter) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onContentSizeChange([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onContentSizeChange([self _textInputMetrics]);
   }
 }
 
@@ -275,7 +280,7 @@ using namespace facebook::react;
 
 - (void)textInputDidBeginEditing
 {
-  const auto &props = static_cast<TextInputProps const &>(*_props);
+  const auto &props = static_cast<const TextInputProps &>(*_props);
 
   if (props.traits.clearTextOnFocus) {
     _backedTextInputView.attributedText = nil;
@@ -288,7 +293,7 @@ using namespace facebook::react;
   }
 
   if (_eventEmitter) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onFocus([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onFocus([self _textInputMetrics]);
   }
 }
 
@@ -300,8 +305,8 @@ using namespace facebook::react;
 - (void)textInputDidEndEditing
 {
   if (_eventEmitter) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onEndEditing([self _textInputMetrics]);
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onBlur([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onEndEditing([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onBlur([self _textInputMetrics]);
   }
 }
 
@@ -316,7 +321,7 @@ using namespace facebook::react;
   // (no connection to any specific "submitting" process).
 
   if (_eventEmitter && shouldSubmit) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onSubmitEditing([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onSubmitEditing([self _textInputMetrics]);
   }
   return shouldSubmit;
 }
@@ -333,20 +338,15 @@ using namespace facebook::react;
 
 - (NSString *)textInputShouldChangeText:(NSString *)text inRange:(NSRange)range
 {
-  const auto &props = static_cast<TextInputProps const &>(*_props);
+  const auto &props = static_cast<const TextInputProps &>(*_props);
 
   if (!_backedTextInputView.textWasPasted) {
     if (_eventEmitter) {
-      KeyPressMetrics keyPressMetrics;
-      keyPressMetrics.text = RCTStringFromNSString(text);
-      keyPressMetrics.eventCount = _mostRecentEventCount;
-
-      auto const &textInputEventEmitter = static_cast<TextInputEventEmitter const &>(*_eventEmitter);
-      if (props.onKeyPressSync) {
-        textInputEventEmitter.onKeyPressSync(keyPressMetrics);
-      } else {
-        textInputEventEmitter.onKeyPress(keyPressMetrics);
-      }
+      const auto &textInputEventEmitter = static_cast<const TextInputEventEmitter &>(*_eventEmitter);
+      textInputEventEmitter.onKeyPress({
+          .text = RCTStringFromNSString(text),
+          .eventCount = static_cast<int>(_mostRecentEventCount),
+      });
     }
   }
 
@@ -391,13 +391,8 @@ using namespace facebook::react;
   [self _updateState];
 
   if (_eventEmitter) {
-    auto const &textInputEventEmitter = static_cast<TextInputEventEmitter const &>(*_eventEmitter);
-    const auto &props = static_cast<TextInputProps const &>(*_props);
-    if (props.onChangeSync) {
-      textInputEventEmitter.onChangeSync([self _textInputMetrics]);
-    } else {
-      textInputEventEmitter.onChange([self _textInputMetrics]);
-    }
+    const auto &textInputEventEmitter = static_cast<const TextInputEventEmitter &>(*_eventEmitter);
+    textInputEventEmitter.onChange([self _textInputMetrics]);
   }
 }
 
@@ -406,14 +401,14 @@ using namespace facebook::react;
   if (_comingFromJS) {
     return;
   }
-  const auto &props = static_cast<TextInputProps const &>(*_props);
+  const auto &props = static_cast<const TextInputProps &>(*_props);
   if (props.traits.multiline && ![_lastStringStateWasUpdatedWith isEqual:_backedTextInputView.attributedText]) {
     [self textInputDidChange];
     _ignoreNextTextInputCall = YES;
   }
 
   if (_eventEmitter) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onSelectionChange([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onSelectionChange([self _textInputMetrics]);
   }
 }
 
@@ -422,7 +417,7 @@ using namespace facebook::react;
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
   if (_eventEmitter) {
-    static_cast<TextInputEventEmitter const &>(*_eventEmitter).onScroll([self _textInputMetrics]);
+    static_cast<const TextInputEventEmitter &>(*_eventEmitter).onScroll([self _textInputMetrics]);
   }
 }
 
@@ -473,6 +468,51 @@ using namespace facebook::react;
 
 #pragma mark - Default input accessory view
 
+- (NSString *)returnKeyTypeToString:(UIReturnKeyType)returnKeyType
+{
+  switch (returnKeyType) {
+    case UIReturnKeyDefault:
+      return @"Default";
+    case UIReturnKeyGo:
+      return @"Go";
+    case UIReturnKeyNext:
+      return @"Next";
+    case UIReturnKeySearch:
+      return @"Search";
+    case UIReturnKeySend:
+      return @"Send";
+    case UIReturnKeyYahoo:
+      return @"Yahoo";
+    case UIReturnKeyGoogle:
+      return @"Google";
+    case UIReturnKeyRoute:
+      return @"Route";
+    case UIReturnKeyJoin:
+      return @"Join";
+    case UIReturnKeyEmergencyCall:
+      return @"Emergency Call";
+    default:
+      return @"Done";
+  }
+}
+
+- (void)initializeReturnKeyType
+{
+  returnKeyTypesSet = [NSSet setWithObjects:@(UIReturnKeyDone),
+                                            @(UIReturnKeyGo),
+                                            @(UIReturnKeyDefault),
+                                            @(UIReturnKeyNext),
+                                            @(UIReturnKeySearch),
+                                            @(UIReturnKeySend),
+                                            @(UIReturnKeyYahoo),
+                                            @(UIReturnKeyGoogle),
+                                            @(UIReturnKeyRoute),
+                                            @(UIReturnKeyJoin),
+                                            @(UIReturnKeyRoute),
+                                            @(UIReturnKeyEmergencyCall),
+                                            nil];
+}
+
 - (void)setDefaultInputAccessoryView
 {
   // InputAccessoryView component sets the inputAccessoryView when inputAccessoryViewID exists
@@ -484,27 +524,32 @@ using namespace facebook::react;
   }
 
   UIKeyboardType keyboardType = _backedTextInputView.keyboardType;
+  UIReturnKeyType returnKeyType = _backedTextInputView.returnKeyType;
 
-  // These keyboard types (all are number pads) don't have a "Done" button by default,
+  BOOL containsKeyType = [returnKeyTypesSet containsObject:@(returnKeyType)];
+
+  // These keyboard types (all are number pads) don't have a "returnKey" button by default,
   // so we create an `inputAccessoryView` with this button for them.
   BOOL shouldHaveInputAccessoryView =
       (keyboardType == UIKeyboardTypeNumberPad || keyboardType == UIKeyboardTypePhonePad ||
        keyboardType == UIKeyboardTypeDecimalPad || keyboardType == UIKeyboardTypeASCIICapableNumberPad) &&
-      _backedTextInputView.returnKeyType == UIReturnKeyDone;
+      containsKeyType;
 
   if ((_backedTextInputView.inputAccessoryView != nil) == shouldHaveInputAccessoryView) {
     return;
   }
 
   if (shouldHaveInputAccessoryView) {
+    NSString *buttonLabel = [self returnKeyTypeToString:returnKeyType];
+
     UIToolbar *toolbarView = [UIToolbar new];
     [toolbarView sizeToFit];
     UIBarButtonItem *flexibleSpace =
         [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    UIBarButtonItem *doneButton =
-        [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                                      target:self
-                                                      action:@selector(handleInputAccessoryDoneButton)];
+    UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithTitle:buttonLabel
+                                                                   style:UIBarButtonItemStylePlain
+                                                                  target:self
+                                                                  action:@selector(handleInputAccessoryDoneButton)];
     toolbarView.items = @[ flexibleSpace, doneButton ];
     _backedTextInputView.inputAccessoryView = toolbarView;
   } else {
@@ -525,29 +570,18 @@ using namespace facebook::react;
 
 #pragma mark - Other
 
-- (TextInputMetrics)_textInputMetrics
+- (TextInputEventEmitter::Metrics)_textInputMetrics
 {
-  TextInputMetrics metrics;
-  metrics.text = RCTStringFromNSString(_backedTextInputView.attributedText.string);
-  metrics.selectionRange = [self _selectionRange];
-  metrics.eventCount = _mostRecentEventCount;
-
-  CGPoint contentOffset = _backedTextInputView.contentOffset;
-  metrics.contentOffset = {contentOffset.x, contentOffset.y};
-
-  UIEdgeInsets contentInset = _backedTextInputView.contentInset;
-  metrics.contentInset = {contentInset.left, contentInset.top, contentInset.right, contentInset.bottom};
-
-  CGSize contentSize = _backedTextInputView.contentSize;
-  metrics.contentSize = {contentSize.width, contentSize.height};
-
-  CGSize layoutMeasurement = _backedTextInputView.bounds.size;
-  metrics.layoutMeasurement = {layoutMeasurement.width, layoutMeasurement.height};
-
-  CGFloat zoomScale = _backedTextInputView.zoomScale;
-  metrics.zoomScale = zoomScale;
-
-  return metrics;
+  return {
+      .text = RCTStringFromNSString(_backedTextInputView.attributedText.string),
+      .selectionRange = [self _selectionRange],
+      .eventCount = static_cast<int>(_mostRecentEventCount),
+      .contentOffset = RCTPointFromCGPoint(_backedTextInputView.contentOffset),
+      .contentInset = RCTEdgeInsetsFromUIEdgeInsets(_backedTextInputView.contentInset),
+      .contentSize = RCTSizeFromCGSize(_backedTextInputView.contentSize),
+      .layoutMeasurement = RCTSizeFromCGSize(_backedTextInputView.bounds.size),
+      .zoomScale = _backedTextInputView.zoomScale,
+  };
 }
 
 - (void)_updateState
@@ -576,7 +610,7 @@ using namespace facebook::react;
 
 - (void)_restoreTextSelection
 {
-  const auto &selection = static_cast<TextInputProps const &>(*_props).selection;
+  const auto &selection = static_cast<const TextInputProps &>(*_props).selection;
   if (!selection.has_value()) {
     return;
   }
@@ -595,6 +629,9 @@ using namespace facebook::react;
   UITextRange *selectedRange = _backedTextInputView.selectedTextRange;
   NSInteger oldTextLength = _backedTextInputView.attributedText.string.length;
   _backedTextInputView.attributedText = attributedString;
+  // Updating the UITextView attributedText, for example changing the lineHeight, the color or adding
+  // a new paragraph with \n, causes the cursor to move to the end of the Text and scroll.
+  // This is fixed by restoring the cursor position and scrolling to that position (iOS issue 652653).
   if (selectedRange.empty) {
     // Maintaining a cursor position relative to the end of the old text.
     NSInteger offsetStart = [_backedTextInputView offsetFromPosition:_backedTextInputView.beginningOfDocument
@@ -605,6 +642,7 @@ using namespace facebook::react;
                                                                    offset:newOffset];
     [_backedTextInputView setSelectedTextRange:[_backedTextInputView textRangeFromPosition:position toPosition:position]
                                 notifyDelegate:YES];
+    [_backedTextInputView scrollRangeToVisible:NSMakeRange(offsetStart, 0)];
   }
   [self _restoreTextSelection];
   _lastStringStateWasUpdatedWith = attributedString;
@@ -656,7 +694,7 @@ using namespace facebook::react;
 
 - (SubmitBehavior)getSubmitBehavior
 {
-  const auto &props = static_cast<TextInputProps const &>(*_props);
+  const auto &props = static_cast<const TextInputProps &>(*_props);
   const SubmitBehavior submitBehaviorDefaultable = props.traits.submitBehavior;
 
   // We should always have a non-default `submitBehavior`, but in case we don't, set it based on multiline.

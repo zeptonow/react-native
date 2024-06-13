@@ -64,33 +64,22 @@ export interface Spec {
     commandName: string,
     args: Array<mixed>,
   ) => void;
-
-  /**
-   * Support methods for the DOM-compatible APIs.
-   */
-  +getParentNode: (node: Node) => ?InternalInstanceHandle;
-  +getChildNodes: (node: Node) => $ReadOnlyArray<InternalInstanceHandle>;
-  +isConnected: (node: Node) => boolean;
+  +findNodeAtPoint: (
+    node: Node,
+    locationX: number,
+    locationY: number,
+    callback: (instanceHandle: ?InternalInstanceHandle) => void,
+  ) => void;
   +compareDocumentPosition: (node: Node, otherNode: Node) => number;
-  +getTextContent: (node: Node) => string;
   +getBoundingClientRect: (
     node: Node,
+    includeTransform: boolean,
   ) => ?[
     /* x: */ number,
     /* y: */ number,
     /* width: */ number,
     /* height: */ number,
   ];
-  +getOffset: (
-    node: Node,
-  ) => ?[
-    /* offsetParent: */ InternalInstanceHandle,
-    /* offsetTop: */ number,
-    /* offsetLeft: */ number,
-  ];
-  +getScrollPosition: (
-    node: Node,
-  ) => ?[/* scrollLeft: */ number, /* scrollTop: */ number];
 }
 
 let nativeFabricUIManagerProxy: ?Spec;
@@ -116,14 +105,8 @@ const CACHED_PROPERTIES = [
   'findShadowNodeByTag_DEPRECATED',
   'setNativeProps',
   'dispatchCommand',
-  'getParentNode',
-  'getChildNodes',
-  'isConnected',
   'compareDocumentPosition',
-  'getTextContent',
   'getBoundingClientRect',
-  'getOffset',
-  'getScrollPosition',
 ];
 
 // This is exposed as a getter because apps using the legacy renderer AND

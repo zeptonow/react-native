@@ -10,7 +10,6 @@
 
 import type {ViewProps} from './ViewPropTypes';
 
-import flattenStyle from '../../StyleSheet/flattenStyle';
 import TextAncestor from '../../Text/TextAncestor';
 import ViewNativeComponent from './ViewNativeComponent';
 import * as React from 'react';
@@ -53,7 +52,6 @@ const View: React.AbstractComponent<
       id,
       importantForAccessibility,
       nativeID,
-      pointerEvents,
       tabIndex,
       ...otherProps
     }: ViewProps,
@@ -96,11 +94,6 @@ const View: React.AbstractComponent<
       };
     }
 
-    // $FlowFixMe[underconstrained-implicit-instantiation]
-    let style = flattenStyle(otherProps.style);
-
-    const newPointerEvents = style?.pointerEvents || pointerEvents;
-
     const actualView = (
       <ViewNativeComponent
         {...otherProps}
@@ -119,8 +112,6 @@ const View: React.AbstractComponent<
             : importantForAccessibility
         }
         nativeID={id ?? nativeID}
-        style={style}
-        pointerEvents={newPointerEvents}
         ref={forwardedRef}
       />
     );

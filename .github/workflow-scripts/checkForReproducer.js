@@ -8,11 +8,13 @@
  */
 
 const NEEDS_REPRO_LABEL = 'Needs: Repro';
+const NEEDS_AUTHOR_FEEDBACK_LABEL = 'Needs: Author Feedback';
 const NEEDS_REPRO_HEADER = 'Missing Reproducible Example';
 const NEEDS_REPRO_MESSAGE =
   `| :warning: | Missing Reproducible Example |\n` +
   `| --- | --- |\n` +
   `| :information_source: | We could not detect a reproducible example in your issue report. Please provide either: <br /><ul><li>If your bug is UI related: a [Snack](https://snack.expo.dev)</li><li> If your bug is build/update related: use our [Reproducer Template](https://github.com/react-native-community/reproducer-react-native/generate). A reproducer needs to be in a GitHub repository under your username.</li></ul> |`;
+const SKIP_ISSUES_OLDER_THAN = '2023-07-01T00:00:00Z';
 
 module.exports = async (github, context) => {
   const issueData = {
@@ -25,6 +27,11 @@ module.exports = async (github, context) => {
   const comments = await github.rest.issues.listComments(issueData);
 
   const author = issue.data.user.login;
+
+  const issueDate = issue.data.created_at;
+  if (isDateBefore(issueDate, SKIP_ISSUES_OLDER_THAN)) {
+    return;
+  }
 
   const maintainerChangedLabel = await hasMaintainerChangedLabel(
     github,
@@ -77,7 +84,7 @@ module.exports = async (github, context) => {
   } else {
     await github.rest.issues.addLabels({
       ...issueData,
-      labels: [NEEDS_REPRO_LABEL],
+      labels: [NEEDS_REPRO_LABEL, NEEDS_AUTHOR_FEEDBACK_LABEL],
     });
 
     if (botComment) return;
@@ -107,4 +114,11 @@ async function hasMaintainerChangedLabel(github, issueData, author) {
     event =>
       event.actor.login !== author && event.label.name === NEEDS_REPRO_LABEL,
   );
+}
+
+function isDateBefore(firstDate, secondDate) {
+  const date1 = new Date(firstDate);
+  const date2 = new Date(secondDate);
+
+  return date1.getTime() < date2.getTime();
 }

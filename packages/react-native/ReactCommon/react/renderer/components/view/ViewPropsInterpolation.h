@@ -19,21 +19,24 @@ namespace facebook::react {
  */
 static inline void interpolateViewProps(
     Float animationProgress,
-    const Props::Shared &oldPropsShared,
-    const Props::Shared &newPropsShared,
-    Props::Shared &interpolatedPropsShared) {
-  ViewProps const *oldViewProps =
-      static_cast<ViewProps const *>(oldPropsShared.get());
-  ViewProps const *newViewProps =
-      static_cast<ViewProps const *>(newPropsShared.get());
-  ViewProps *interpolatedProps = const_cast<ViewProps *>(
-      static_cast<ViewProps const *>(interpolatedPropsShared.get()));
+    const Props::Shared& oldPropsShared,
+    const Props::Shared& newPropsShared,
+    Props::Shared& interpolatedPropsShared,
+    const Size& size) {
+  const ViewProps* oldViewProps =
+      static_cast<const ViewProps*>(oldPropsShared.get());
+  const ViewProps* newViewProps =
+      static_cast<const ViewProps*>(newPropsShared.get());
+  ViewProps* interpolatedProps = const_cast<ViewProps*>(
+      static_cast<const ViewProps*>(interpolatedPropsShared.get()));
 
   interpolatedProps->opacity = oldViewProps->opacity +
       (newViewProps->opacity - oldViewProps->opacity) * animationProgress;
-
   interpolatedProps->transform = Transform::Interpolate(
-      animationProgress, oldViewProps->transform, newViewProps->transform);
+      animationProgress,
+      oldViewProps->transform,
+      newViewProps->transform,
+      size);
 
   // Android uses RawProps, not props, to update props on the platform...
   // Since interpolated props don't interpolate at all using RawProps, we need

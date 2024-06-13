@@ -10,6 +10,7 @@
 #include <react/renderer/graphics/Color.h>
 #include <react/renderer/graphics/RectangleCorners.h>
 #include <react/renderer/graphics/RectangleEdges.h>
+#include <react/renderer/graphics/ValueUnit.h>
 
 #include <array>
 #include <bitset>
@@ -62,6 +63,10 @@ struct ViewEvents {
     ClickCapture = 31,
     GotPointerCapture = 32,
     LostPointerCapture = 33,
+    PointerDown = 34,
+    PointerDownCapture = 35,
+    PointerUp = 36,
+    PointerUpCapture = 37,
   };
 
   constexpr bool operator[](const Offset offset) const {
@@ -73,11 +78,11 @@ struct ViewEvents {
   }
 };
 
-inline static bool operator==(ViewEvents const &lhs, ViewEvents const &rhs) {
+inline static bool operator==(const ViewEvents& lhs, const ViewEvents& rhs) {
   return lhs.bits == rhs.bits;
 }
 
-inline static bool operator!=(ViewEvents const &lhs, ViewEvents const &rhs) {
+inline static bool operator!=(const ViewEvents& lhs, const ViewEvents& rhs) {
   return lhs.bits != rhs.bits;
 }
 
@@ -86,6 +91,47 @@ enum class BackfaceVisibility : uint8_t { Auto, Visible, Hidden };
 enum class BorderCurve : uint8_t { Circular, Continuous };
 
 enum class BorderStyle : uint8_t { Solid, Dotted, Dashed };
+
+enum class Cursor : uint8_t {
+  Auto,
+  Alias,
+  AllScroll,
+  Cell,
+  ColResize,
+  ContextMenu,
+  Copy,
+  Crosshair,
+  Default,
+  EResize,
+  EWResize,
+  Grab,
+  Grabbing,
+  Help,
+  Move,
+  NEResize,
+  NESWResize,
+  NResize,
+  NSResize,
+  NWResize,
+  NWSEResize,
+  NoDrop,
+  None,
+  NotAllowed,
+  Pointer,
+  Progress,
+  RowResize,
+  SResize,
+  SEResize,
+  SWResize,
+  Text,
+  Url,
+  WResize,
+  Wait,
+  ZoomIn,
+  ZoomOut,
+};
+
+enum class LayoutConformance : uint8_t { Undefined, Classic, Strict };
 
 template <typename T>
 struct CascadedRectangleEdges {
@@ -127,7 +173,7 @@ struct CascadedRectangleEdges {
     };
   }
 
-  bool operator==(const CascadedRectangleEdges<T> &rhs) const {
+  bool operator==(const CascadedRectangleEdges<T>& rhs) const {
     return std::tie(
                this->left,
                this->top,
@@ -156,7 +202,7 @@ struct CascadedRectangleEdges {
                rhs.blockEnd);
   }
 
-  bool operator!=(const CascadedRectangleEdges<T> &rhs) const {
+  bool operator!=(const CascadedRectangleEdges<T>& rhs) const {
     return !(*this == rhs);
   }
 };
@@ -203,7 +249,7 @@ struct CascadedRectangleCorners {
     };
   }
 
-  bool operator==(const CascadedRectangleCorners<T> &rhs) const {
+  bool operator==(const CascadedRectangleCorners<T>& rhs) const {
     return std::tie(
                this->topLeft,
                this->topRight,
@@ -234,7 +280,7 @@ struct CascadedRectangleCorners {
                rhs.startStart);
   }
 
-  bool operator!=(const CascadedRectangleCorners<T> &rhs) const {
+  bool operator!=(const CascadedRectangleCorners<T>& rhs) const {
     return !(*this == rhs);
   }
 };
@@ -249,7 +295,7 @@ using CascadedBorderWidths = CascadedRectangleEdges<Float>;
 using CascadedBorderCurves = CascadedRectangleCorners<BorderCurve>;
 using CascadedBorderStyles = CascadedRectangleEdges<BorderStyle>;
 using CascadedBorderColors = CascadedRectangleEdges<SharedColor>;
-using CascadedBorderRadii = CascadedRectangleCorners<Float>;
+using CascadedBorderRadii = CascadedRectangleCorners<ValueUnit>;
 
 struct BorderMetrics {
   BorderColors borderColors{};
@@ -258,7 +304,7 @@ struct BorderMetrics {
   BorderCurves borderCurves{};
   BorderStyles borderStyles{};
 
-  bool operator==(const BorderMetrics &rhs) const {
+  bool operator==(const BorderMetrics& rhs) const {
     return std::tie(
                this->borderColors,
                this->borderWidths,
@@ -273,52 +319,9 @@ struct BorderMetrics {
                rhs.borderStyles);
   }
 
-  bool operator!=(const BorderMetrics &rhs) const {
+  bool operator!=(const BorderMetrics& rhs) const {
     return !(*this == rhs);
   }
 };
-
-#ifdef ANDROID
-
-struct NativeDrawable {
-  enum class Kind : uint8_t {
-    Ripple,
-    ThemeAttr,
-  };
-
-  struct Ripple {
-    std::optional<int32_t> color{};
-    std::optional<Float> rippleRadius{};
-    bool borderless{false};
-
-    bool operator==(const Ripple &rhs) const {
-      return std::tie(this->color, this->borderless, this->rippleRadius) ==
-          std::tie(rhs.color, rhs.borderless, rhs.rippleRadius);
-    }
-  };
-
-  std::string themeAttr;
-  Ripple ripple;
-  Kind kind;
-
-  bool operator==(const NativeDrawable &rhs) const {
-    if (this->kind != rhs.kind)
-      return false;
-    switch (this->kind) {
-      case Kind::ThemeAttr:
-        return this->themeAttr == rhs.themeAttr;
-      case Kind::Ripple:
-        return this->ripple == rhs.ripple;
-    }
-  }
-
-  bool operator!=(const NativeDrawable &rhs) const {
-    return !(*this == rhs);
-  }
-
-  ~NativeDrawable() = default;
-};
-
-#endif
 
 } // namespace facebook::react

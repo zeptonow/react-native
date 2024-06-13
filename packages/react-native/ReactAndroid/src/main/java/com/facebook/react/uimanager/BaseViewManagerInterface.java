@@ -48,6 +48,8 @@ public interface BaseViewManagerInterface<T extends View> {
 
   void setElevation(T view, float elevation);
 
+  void setFilter(T view, ReadableArray filter);
+
   void setShadowColor(T view, int shadowColor);
 
   void setImportantForAccessibility(T view, @Nullable String importantForAccessibility);
@@ -71,6 +73,8 @@ public interface BaseViewManagerInterface<T extends View> {
   void setTestId(T view, String testId);
 
   void setTransform(T view, @Nullable ReadableArray matrix);
+
+  void setTransformOrigin(T view, @Nullable ReadableArray transformOrigin);
 
   void setTranslateX(T view, float translateX);
 

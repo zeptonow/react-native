@@ -8,6 +8,7 @@
 package com.facebook.react.uimanager;
 
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.View;
@@ -19,6 +20,7 @@ import androidx.core.view.ViewCompat;
 import com.facebook.common.logging.FLog;
 import com.facebook.react.R;
 import com.facebook.react.bridge.Dynamic;
+import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableMapKeySetIterator;
@@ -40,7 +42,7 @@ import java.util.Map;
  * provides support for base view properties such as backgroundColor, opacity, etc.
  */
 public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode>
-    extends ViewManager<T, C> implements BaseViewManagerInterface<T> {
+    extends ViewManager<T, C> implements BaseViewManagerInterface<T>, View.OnLayoutChangeListener {
 
   private static final int PERSPECTIVE_ARRAY_INVERTED_CAMERA_DISTANCE_INDEX = 2;
   private static final float CAMERA_DISTANCE_NORMALIZATION_MULTIPLIER = (float) Math.sqrt(5);
@@ -53,6 +55,14 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
   private static final String STATE_BUSY = "busy";
   private static final String STATE_EXPANDED = "expanded";
   private static final String STATE_MIXED = "mixed";
+
+  public BaseViewManager() {
+    super(null);
+  }
+
+  public BaseViewManager(@Nullable ReactApplicationContext reactContext) {
+    super(reactContext);
+  }
 
   @Override
   protected T prepareToRecycleView(@NonNull ThemedReactContext reactContext, T view) {
@@ -79,9 +89,9 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
     // setScaleX
     // setScaleY
     // setCameraDistance
-    setTransform(view, null);
+    setTransformProperty(view, null, null);
 
-    // RenderNode params not covered by setTransform above
+    // RenderNode params not covered by setTransformProperty above
     view.resetPivot();
     view.setTop(0);
     view.setBottom(0);
@@ -89,6 +99,15 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
     view.setRight(0);
     view.setElevation(0);
     view.setAnimationMatrix(null);
+
+    view.setTag(R.id.transform, null);
+    view.setTag(R.id.transform_origin, null);
+    view.setTag(R.id.invalidate_transform, null);
+    view.removeOnLayoutChangeListener(this);
+
+    view.setTag(R.id.use_hardware_layer, null);
+    view.setTag(R.id.filter, null);
+    applyFilter(view, null);
 
     // setShadowColor
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -129,6 +148,35 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
     return view;
   }
 
+  // Currently, layout listener is only attached when transform or transformOrigin is set.
+  @Override
+  public void onLayoutChange(
+      View v,
+      int left,
+      int top,
+      int right,
+      int bottom,
+      int oldLeft,
+      int oldTop,
+      int oldRight,
+      int oldBottom) {
+    // Old width and height
+    int oldWidth = oldRight - oldLeft;
+    int oldHeight = oldBottom - oldTop;
+
+    // Current width and height
+    int currentWidth = right - left;
+    int currentHeight = bottom - top;
+
+    if ((currentHeight != oldHeight || currentWidth != oldWidth)) {
+      ReadableArray transformOrigin = (ReadableArray) v.getTag(R.id.transform_origin);
+      ReadableArray transforms = (ReadableArray) v.getTag(R.id.transform);
+      if (transforms != null || transformOrigin != null) {
+        setTransformProperty((T) v, transforms, transformOrigin);
+      }
+    }
+  }
+
   @Override
   @ReactProp(
       name = ViewProps.BACKGROUND_COLOR,
@@ -139,13 +187,23 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
   }
 
   @Override
+  @ReactProp(name = ViewProps.FILTER, customType = "Filter")
+  public void setFilter(@NonNull T view, @Nullable ReadableArray filter) {
+    view.setTag(R.id.filter, filter);
+  }
+
+  @Override
   @ReactProp(name = ViewProps.TRANSFORM)
   public void setTransform(@NonNull T view, @Nullable ReadableArray matrix) {
-    if (matrix == null) {
-      resetTransformProperty(view);
-    } else {
-      setTransformProperty(view, matrix);
-    }
+    view.setTag(R.id.transform, matrix);
+    view.setTag(R.id.invalidate_transform, true);
+  }
+
+  @Override
+  @ReactProp(name = ViewProps.TRANSFORM_ORIGIN)
+  public void setTransformOrigin(@NonNull T view, @Nullable ReadableArray transformOrigin) {
+    view.setTag(R.id.transform_origin, transformOrigin);
+    view.setTag(R.id.invalidate_transform, true);
   }
 
   @Override
@@ -183,7 +241,7 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
   @Override
   @ReactProp(name = ViewProps.RENDER_TO_HARDWARE_TEXTURE)
   public void setRenderToHardwareTexture(@NonNull T view, boolean useHWTexture) {
-    view.setLayerType(useHWTexture ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null);
+    view.setTag(R.id.use_hardware_layer, useHWTexture);
   }
 
   @Override
@@ -439,9 +497,51 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
     }
   }
 
-  private static void setTransformProperty(@NonNull View view, ReadableArray transforms) {
+  private void applyFilter(@NonNull T view, @Nullable ReadableArray filter) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      view.setRenderEffect(null);
+    }
+    Boolean useHWLayer = (Boolean) view.getTag(R.id.use_hardware_layer);
+    int layerType =
+        useHWLayer != null && useHWLayer ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE;
+    view.setLayerType(layerType, null);
+
+    if (filter == null) {
+      return;
+    }
+
+    if (FilterHelper.isOnlyColorMatrixFilters(filter)) {
+      Paint p = new Paint();
+      p.setColorFilter(FilterHelper.parseColorMatrixFilters(filter));
+      view.setLayerType(View.LAYER_TYPE_HARDWARE, p);
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      view.setRenderEffect(FilterHelper.parseFilters(filter));
+    }
+  }
+
+  protected void setTransformProperty(
+      @NonNull T view,
+      @Nullable ReadableArray transforms,
+      @Nullable ReadableArray transformOrigin) {
+    if (transforms == null) {
+      view.setTranslationX(PixelUtil.toPixelFromDIP(0));
+      view.setTranslationY(PixelUtil.toPixelFromDIP(0));
+      view.setRotation(0);
+      view.setRotationX(0);
+      view.setRotationY(0);
+      view.setScaleX(1);
+      view.setScaleY(1);
+      view.setCameraDistance(0);
+      return;
+    }
+
     sMatrixDecompositionContext.reset();
-    TransformHelper.processTransform(transforms, sTransformDecompositionArray);
+    TransformHelper.processTransform(
+        transforms,
+        sTransformDecompositionArray,
+        PixelUtil.toDIPFromPixel(view.getWidth()),
+        PixelUtil.toDIPFromPixel(view.getHeight()),
+        transformOrigin);
     MatrixMathHelper.decomposeMatrix(sTransformDecompositionArray, sMatrixDecompositionContext);
     view.setTranslationX(
         PixelUtil.toPixelFromDIP(
@@ -506,17 +606,6 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
     throw new IllegalStateException("Invalid float property value: " + value);
   }
 
-  private static void resetTransformProperty(@NonNull View view) {
-    view.setTranslationX(PixelUtil.toPixelFromDIP(0));
-    view.setTranslationY(PixelUtil.toPixelFromDIP(0));
-    view.setRotation(0);
-    view.setRotationX(0);
-    view.setRotationY(0);
-    view.setScaleX(1);
-    view.setScaleY(1);
-    view.setCameraDistance(0);
-  }
-
   private void updateViewAccessibility(@NonNull T view) {
     ReactAccessibilityDelegate.setDelegate(
         view, view.isFocusable(), view.getImportantForAccessibility());
@@ -526,6 +615,23 @@ public abstract class BaseViewManager<T extends View, C extends LayoutShadowNode
   protected void onAfterUpdateTransaction(@NonNull T view) {
     super.onAfterUpdateTransaction(view);
     updateViewAccessibility(view);
+
+    Boolean invalidateTransform = (Boolean) view.getTag(R.id.invalidate_transform);
+    if (invalidateTransform != null && invalidateTransform) {
+      view.addOnLayoutChangeListener(this);
+      ReadableArray transformOrigin = (ReadableArray) view.getTag(R.id.transform_origin);
+      ReadableArray transforms = (ReadableArray) view.getTag(R.id.transform);
+      setTransformProperty(view, transforms, transformOrigin);
+      view.setTag(R.id.invalidate_transform, false);
+    }
+
+    Boolean useHWLayer = (Boolean) view.getTag(R.id.use_hardware_layer);
+    if (useHWLayer != null) {
+      view.setLayerType(useHWLayer ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null);
+    }
+
+    ReadableArray filter = (ReadableArray) view.getTag(R.id.filter);
+    applyFilter(view, filter);
   }
 
   @Override

@@ -14,7 +14,7 @@ namespace facebook::react {
 
 void EventEmitterWrapper::dispatchEvent(
     std::string eventName,
-    NativeMap *payload,
+    NativeMap* payload,
     int category) {
   // It is marginal, but possible for this to be constructed without a valid
   // EventEmitter. In those cases, make sure we noop/blackhole events instead of
@@ -23,16 +23,29 @@ void EventEmitterWrapper::dispatchEvent(
     eventEmitter->dispatchEvent(
         eventName,
         payload ? payload->consume() : folly::dynamic::object(),
-        EventPriority::AsynchronousBatched,
         static_cast<RawEvent::Category>(category));
+  }
+}
+
+void EventEmitterWrapper::dispatchEventSynchronously(
+    std::string eventName,
+    NativeMap* params) {
+  // It is marginal, but possible for this to be constructed without a valid
+  // EventEmitter. In those cases, make sure we noop/blackhole events instead of
+  // crashing.
+  if (eventEmitter != nullptr) {
+    eventEmitter->experimental_flushSync([&]() {
+      eventEmitter->dispatchEvent(
+          std::move(eventName),
+          (params != nullptr) ? params->consume() : folly::dynamic::object(),
+          RawEvent::Category::Discrete);
+    });
   }
 }
 
 void EventEmitterWrapper::dispatchUniqueEvent(
     std::string eventName,
-    NativeMap *payload,
-    int customCoalesceKey) {
-  // TODO: customCoalesceKey currently unused
+    NativeMap* payload) {
   // It is marginal, but possible for this to be constructed without a valid
   // EventEmitter. In those cases, make sure we noop/blackhole events instead of
   // crashing.
@@ -47,6 +60,9 @@ void EventEmitterWrapper::registerNatives() {
       makeNativeMethod("dispatchEvent", EventEmitterWrapper::dispatchEvent),
       makeNativeMethod(
           "dispatchUniqueEvent", EventEmitterWrapper::dispatchUniqueEvent),
+      makeNativeMethod(
+          "dispatchEventSynchronously",
+          EventEmitterWrapper::dispatchEventSynchronously),
   });
 }
 

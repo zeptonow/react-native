@@ -18,11 +18,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.*
-import org.powermock.core.classloader.annotations.PowerMockIgnore
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-@PowerMockIgnore("org.mockito.*", "org.robolectric.*", "androidx.*", "android.*")
 class ImageStoreManagerTest {
 
   private lateinit var reactApplicationContext: ReactApplicationContext
@@ -73,8 +71,7 @@ class ImageStoreManagerTest {
   }
 
   private fun invokeConversion(inputStream: InputStream): String {
-    return ImageStoreManager(reactApplicationContext)
-        .convertInputStreamToBase64OutputStream(inputStream)
+    return ImageStoreManager.convertInputStreamToBase64OutputStream(inputStream)
   }
 
   private fun generateRandomByteString(length: Int): ByteArray {

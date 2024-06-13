@@ -18,7 +18,7 @@ void ScrollViewShadowNode::updateStateIfNeeded() {
   ensureUnsealed();
 
   auto contentBoundingRect = Rect{};
-  for (const auto &childNode : getLayoutableChildNodes()) {
+  for (const auto& childNode : getLayoutableChildNodes()) {
     contentBoundingRect.unionInPlace(childNode->getLayoutMetrics().frame);
   }
 
@@ -49,10 +49,10 @@ void ScrollViewShadowNode::updateScrollContentOffsetIfNeeded() {
 }
 
 ScrollViewState ScrollViewShadowNode::initialStateData(
-    Props::Shared const &props,
-    const ShadowNodeFamily::Shared & /*family*/,
-    const ComponentDescriptor & /*componentDescriptor*/) {
-  return {static_cast<ScrollViewProps const &>(*props).contentOffset, {}, 0};
+    const Props::Shared& props,
+    const ShadowNodeFamily::Shared& /*family*/,
+    const ComponentDescriptor& /*componentDescriptor*/) {
+  return {static_cast<const ScrollViewProps&>(*props).contentOffset, {}, 0};
 }
 
 #pragma mark - LayoutableShadowNode
@@ -63,10 +63,15 @@ void ScrollViewShadowNode::layout(LayoutContext layoutContext) {
   updateStateIfNeeded();
 }
 
-Point ScrollViewShadowNode::getContentOriginOffset() const {
+Point ScrollViewShadowNode::getContentOriginOffset(
+    bool includeTransform) const {
   auto stateData = getStateData();
   auto contentOffset = stateData.contentOffset;
-  return {-contentOffset.x, -contentOffset.y + stateData.scrollAwayPaddingTop};
-}
+  auto transform = includeTransform ? getTransform() : Transform::Identity();
+  auto result =
+      transform * Vector{-contentOffset.x, -contentOffset.y, 0.0f, 1.0f};
 
+  return {
+      result.x, result.y + static_cast<float>(stateData.scrollAwayPaddingTop)};
+}
 } // namespace facebook::react

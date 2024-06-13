@@ -8,16 +8,14 @@
  * @flow strict
  */
 
+import type {
+  Platform as PlatformType,
+  PlatformSelectSpec,
+} from './Platform.flow';
+
 import NativePlatformConstantsIOS from './NativePlatformConstantsIOS';
 
-export type PlatformSelectSpec<T> = {
-  default?: T,
-  native?: T,
-  ios?: T,
-  ...
-};
-
-const Platform = {
+const Platform: PlatformType = {
   __constants: null,
   OS: 'ios',
   // $FlowFixMe[unsafe-getters-setters]
@@ -39,6 +37,7 @@ const Platform = {
       prerelease: ?number,
     |},
     systemName: string,
+    isMacCatalyst?: boolean,
   |} {
     // $FlowFixMe[object-this-reference]
     if (this.__constants == null) {
@@ -59,6 +58,11 @@ const Platform = {
     return this.constants.interfaceIdiom === 'tv';
   },
   // $FlowFixMe[unsafe-getters-setters]
+  get isVision(): boolean {
+    // $FlowFixMe[object-this-reference]
+    return this.constants.interfaceIdiom === 'vision';
+  },
+  // $FlowFixMe[unsafe-getters-setters]
   get isTesting(): boolean {
     if (__DEV__) {
       // $FlowFixMe[object-this-reference]
@@ -70,6 +74,11 @@ const Platform = {
   get isDisableAnimations(): boolean {
     // $FlowFixMe[object-this-reference]
     return this.constants.isDisableAnimations ?? this.isTesting;
+  },
+  // $FlowFixMe[unsafe-getters-setters]
+  get isMacCatalyst(): boolean {
+    // $FlowFixMe[object-this-reference]
+    return this.constants.isMacCatalyst ?? false;
   },
   select: <T>(spec: PlatformSelectSpec<T>): T =>
     // $FlowFixMe[incompatible-return]

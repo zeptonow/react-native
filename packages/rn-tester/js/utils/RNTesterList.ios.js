@@ -87,7 +87,11 @@ const Components: Array<RNTesterModuleInfo> = [
   },
   {
     key: 'ScrollViewIndicatorInsetsExample',
-    module: require('../examples/ScrollView/ScrollViewIndicatorInsetsExample'),
+    module: require('../examples/ScrollView/ScrollViewIndicatorInsetsIOSExample'),
+  },
+  {
+    key: 'ScrollViewKeyboardInsetsExample',
+    module: require('../examples/ScrollView/ScrollViewKeyboardInsetsIOSExample'),
   },
   {
     key: 'SectionListIndex',
@@ -135,6 +139,15 @@ const Components: Array<RNTesterModuleInfo> = [
     key: 'NewArchitectureExample',
     category: 'UI',
     module: require('../examples/NewArchitecture/NewArchitectureExample'),
+  },
+  {
+    key: 'PerformanceComparisonExample',
+    category: 'Basic',
+    module: require('../examples/Performance/PerformanceComparisonExample'),
+  },
+  {
+    key: 'OSSLibraryExample',
+    module: require('../examples/OSSLibraryExample/OSSLibraryExample'),
   },
 ];
 
@@ -185,6 +198,10 @@ const APIs: Array<RNTesterModuleInfo> = ([
   {
     key: 'CrashExample',
     module: require('../examples/Crash/CrashExample'),
+  },
+  {
+    key: 'CursorExample',
+    module: require('../examples/Cursor/CursorExample'),
   },
   {
     key: 'DevSettings',
@@ -246,6 +263,10 @@ const APIs: Array<RNTesterModuleInfo> = ([
     module: require('../examples/PlatformColor/PlatformColorExample'),
   },
   {
+    key: 'PixelRatio',
+    module: require('../examples/PixelRatio/PixelRatioExample'),
+  },
+  {
     key: 'PointerEventsExample',
     module: require('../examples/PointerEvents/PointerEventsExample'),
   },
@@ -272,6 +293,10 @@ const APIs: Array<RNTesterModuleInfo> = ([
   {
     key: 'TransformExample',
     module: require('../examples/Transform/TransformExample'),
+  },
+  {
+    key: 'FilterExample',
+    module: require('../examples/Filter/FilterExample'),
   },
   {
     key: 'TurboModuleExample',

@@ -1,0 +1,10 @@
+@generated SignedSource<<e720233daa98832004d7ac2de9c916eb>>
+Git revision: 06a25f749e9653fb794878e28e1fc4ffab53ccb8
+Built with --nohooks: false
+Is local checkout: false
+Remote URL: https://github.com/facebookexperimental/rn-chrome-devtools-frontend
+Remote branch: main
+GN build args (overrides only): 
+  is_official_build = true
+Git status in checkout:
+  <no changes>

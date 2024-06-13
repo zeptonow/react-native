@@ -19,6 +19,7 @@ const EMPTY_NATIVE_MODULES: SchemaType = {
       aliasMap: {},
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [],
       },
       moduleName: 'SampleTurboModule',
@@ -83,6 +84,7 @@ const SIMPLE_NATIVE_MODULES: SchemaType = {
         },
       },
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'getConstants',
@@ -412,6 +414,7 @@ const TWO_MODULES_DIFFERENT_FILES: SchemaType = {
       aliasMap: {},
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'voidFunc',
@@ -433,6 +436,7 @@ const TWO_MODULES_DIFFERENT_FILES: SchemaType = {
       aliasMap: {},
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'getConstants',
@@ -471,6 +475,7 @@ const COMPLEX_OBJECTS: SchemaType = {
       aliasMap: {},
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'difficult',
@@ -927,6 +932,7 @@ const NATIVE_MODULES_WITH_TYPE_ALIASES: SchemaType = {
       },
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'getConstants',
@@ -1212,6 +1218,7 @@ const REAL_MODULE_EXAMPLE: SchemaType = {
       },
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'getConstants',
@@ -1408,6 +1415,7 @@ const REAL_MODULE_EXAMPLE: SchemaType = {
       },
       enumMap: {},
       spec: {
+        eventEmitters: [],
         properties: [
           {
             name: 'reportFatalException',
@@ -1569,7 +1577,117 @@ const CXX_ONLY_NATIVE_MODULES: SchemaType = {
     NativeSampleTurboModule: {
       type: 'NativeModule',
       aliasMap: {
-        ObjectAlias: {
+        ConstantsStruct: {
+          type: 'ObjectTypeAnnotation',
+          properties: [
+            {
+              name: 'const1',
+              optional: false,
+              typeAnnotation: {
+                type: 'BooleanTypeAnnotation',
+              },
+            },
+            {
+              name: 'const2',
+              optional: false,
+              typeAnnotation: {
+                type: 'NumberTypeAnnotation',
+              },
+            },
+            {
+              name: 'const3',
+              optional: false,
+              typeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+            },
+          ],
+        },
+        CustomHostObject: {
+          type: 'ObjectTypeAnnotation',
+          properties: [],
+        },
+        BinaryTreeNode: {
+          type: 'ObjectTypeAnnotation',
+          properties: [
+            {
+              name: 'left',
+              optional: true,
+              typeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'BinaryTreeNode',
+              },
+            },
+            {
+              name: 'value',
+              optional: false,
+              typeAnnotation: {
+                type: 'NumberTypeAnnotation',
+              },
+            },
+            {
+              name: 'right',
+              optional: true,
+              typeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'BinaryTreeNode',
+              },
+            },
+          ],
+        },
+        GraphNode: {
+          type: 'ObjectTypeAnnotation',
+          properties: [
+            {
+              name: 'label',
+              optional: false,
+              typeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+            },
+            {
+              name: 'neighbors',
+              optional: true,
+              typeAnnotation: {
+                type: 'ArrayTypeAnnotation',
+                elementType: {
+                  type: 'TypeAliasTypeAnnotation',
+                  name: 'GraphNode',
+                },
+              },
+            },
+          ],
+        },
+        ObjectStruct: {
+          type: 'ObjectTypeAnnotation',
+          properties: [
+            {
+              name: 'a',
+              optional: false,
+              typeAnnotation: {
+                type: 'NumberTypeAnnotation',
+              },
+            },
+            {
+              name: 'b',
+              optional: false,
+              typeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+            },
+            {
+              name: 'c',
+              optional: true,
+              typeAnnotation: {
+                type: 'NullableTypeAnnotation',
+                typeAnnotation: {
+                  type: 'StringTypeAnnotation',
+                },
+              },
+            },
+          ],
+        },
+        ValueStruct: {
           type: 'ObjectTypeAnnotation',
           properties: [
             {
@@ -1579,109 +1697,235 @@ const CXX_ONLY_NATIVE_MODULES: SchemaType = {
                 type: 'NumberTypeAnnotation',
               },
             },
+            {
+              name: 'y',
+              optional: false,
+              typeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+            },
+            {
+              name: 'z',
+              optional: false,
+              typeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ObjectStruct',
+              },
+            },
+          ],
+        },
+        MenuItem: {
+          type: 'ObjectTypeAnnotation',
+          properties: [
+            {
+              name: 'label',
+              optional: false,
+              typeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+            },
+            {
+              name: 'onPress',
+              optional: false,
+              typeAnnotation: {
+                type: 'FunctionTypeAnnotation',
+                returnTypeAnnotation: {
+                  type: 'VoidTypeAnnotation',
+                },
+                params: [
+                  {
+                    name: 'value',
+                    optional: false,
+                    typeAnnotation: {
+                      type: 'StringTypeAnnotation',
+                    },
+                  },
+                  {
+                    name: 'flag',
+                    optional: false,
+                    typeAnnotation: {
+                      type: 'BooleanTypeAnnotation',
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              name: 'shortcut',
+              optional: true,
+              typeAnnotation: {
+                type: 'NullableTypeAnnotation',
+                typeAnnotation: {
+                  type: 'StringTypeAnnotation',
+                },
+              },
+            },
+            {
+              name: 'items',
+              optional: true,
+              typeAnnotation: {
+                type: 'ArrayTypeAnnotation',
+                elementType: {
+                  type: 'TypeAliasTypeAnnotation',
+                  name: 'MenuItem',
+                },
+              },
+            },
           ],
         },
       },
       enumMap: {
-        NumEnum: {
+        EnumInt: {
+          name: 'EnumInt',
           type: 'EnumDeclarationWithMembers',
-          name: 'NumEnum',
           memberType: 'NumberTypeAnnotation',
           members: [
             {
-              name: 'ONE',
-              value: '1',
+              name: 'IA',
+              value: '23',
             },
             {
-              name: 'TWO',
-              value: '2',
+              name: 'IB',
+              value: '42',
             },
           ],
         },
-        FloatEnum: {
+        EnumFloat: {
+          name: 'EnumFloat',
           type: 'EnumDeclarationWithMembers',
-          name: 'FloatEnum',
           memberType: 'NumberTypeAnnotation',
           members: [
             {
-              name: 'POINT_ZERO',
-              value: '0.0',
+              name: 'FA',
+              value: '1.23',
             },
             {
-              name: 'POINT_ONE',
-              value: '0.1',
-            },
-            {
-              name: 'POINT_TWO',
-              value: '0.2',
+              name: 'FB',
+              value: '4.56',
             },
           ],
         },
-        StringEnum: {
+        EnumNone: {
+          name: 'EnumNone',
           type: 'EnumDeclarationWithMembers',
-          name: 'StringEnum',
           memberType: 'StringTypeAnnotation',
           members: [
             {
-              name: 'HELLO',
-              value: 'hello',
+              name: 'NA',
+              value: 'NA',
             },
             {
-              name: 'GoodBye',
-              value: 'goodbye',
+              name: 'NB',
+              value: 'NB',
+            },
+          ],
+        },
+        EnumStr: {
+          name: 'EnumStr',
+          type: 'EnumDeclarationWithMembers',
+          memberType: 'StringTypeAnnotation',
+          members: [
+            {
+              name: 'SA',
+              value: 's---a',
+            },
+            {
+              name: 'SB',
+              value: 's---b',
             },
           ],
         },
       },
       spec: {
+        eventEmitters: [],
         properties: [
           {
-            name: 'getMixed',
+            name: 'getArray',
             optional: false,
             typeAnnotation: {
               type: 'FunctionTypeAnnotation',
               returnTypeAnnotation: {
-                type: 'MixedTypeAnnotation',
+                type: 'ArrayTypeAnnotation',
               },
               params: [
                 {
                   name: 'arg',
                   optional: false,
                   typeAnnotation: {
-                    type: 'MixedTypeAnnotation',
+                    type: 'ArrayTypeAnnotation',
                   },
                 },
               ],
             },
           },
           {
-            name: 'getNullableNumberFromNullableAlias',
+            name: 'getBool',
             optional: false,
             typeAnnotation: {
               type: 'FunctionTypeAnnotation',
               returnTypeAnnotation: {
-                type: 'NullableTypeAnnotation',
-                typeAnnotation: {
-                  type: 'NumberTypeAnnotation',
-                },
+                type: 'BooleanTypeAnnotation',
               },
               params: [
                 {
-                  name: 'a',
+                  name: 'arg',
                   optional: false,
                   typeAnnotation: {
-                    type: 'NullableTypeAnnotation',
-                    typeAnnotation: {
-                      type: 'TypeAliasTypeAnnotation',
-                      name: 'ObjectAlias',
-                    },
+                    type: 'BooleanTypeAnnotation',
                   },
                 },
               ],
             },
           },
           {
-            name: 'getEnums',
+            name: 'getConstants',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ConstantsStruct',
+              },
+              params: [],
+            },
+          },
+          {
+            name: 'getCustomEnum',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                name: 'EnumInt',
+                type: 'EnumDeclaration',
+                memberType: 'NumberTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    name: 'EnumInt',
+                    type: 'EnumDeclaration',
+                    memberType: 'NumberTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getCustomHostObject',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'CustomHostObject',
+              },
+              params: [],
+            },
+          },
+          {
+            name: 'consumeCustomHostObject',
             optional: false,
             typeAnnotation: {
               type: 'FunctionTypeAnnotation',
@@ -1690,30 +1934,214 @@ const CXX_ONLY_NATIVE_MODULES: SchemaType = {
               },
               params: [
                 {
-                  name: 'enumInt',
+                  name: 'customHostObject',
                   optional: false,
                   typeAnnotation: {
-                    name: 'NumEnum',
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'CustomHostObject',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getBinaryTreeNode',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'BinaryTreeNode',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'BinaryTreeNode',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getGraphNode',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'GraphNode',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'GraphNode',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getNumEnum',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                name: 'EnumFloat',
+                type: 'EnumDeclaration',
+                memberType: 'NumberTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    name: 'EnumInt',
                     type: 'EnumDeclaration',
                     memberType: 'NumberTypeAnnotation',
                   },
                 },
+              ],
+            },
+          },
+          {
+            name: 'getStrEnum',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                name: 'EnumStr',
+                type: 'EnumDeclaration',
+                memberType: 'StringTypeAnnotation',
+              },
+              params: [
                 {
-                  name: 'enumFloat',
+                  name: 'arg',
                   optional: false,
                   typeAnnotation: {
-                    name: 'FloatEnum',
-                    type: 'EnumDeclaration',
-                    memberType: 'NumberTypeAnnotation',
-                  },
-                },
-                {
-                  name: 'enumString',
-                  optional: false,
-                  typeAnnotation: {
-                    name: 'StringEnum',
+                    name: 'EnumNone',
                     type: 'EnumDeclaration',
                     memberType: 'StringTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getMap',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'GenericObjectTypeAnnotation',
+                dictionaryValueType: {
+                  type: 'NullableTypeAnnotation',
+                  typeAnnotation: {
+                    type: 'NumberTypeAnnotation',
+                  },
+                },
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'GenericObjectTypeAnnotation',
+                    dictionaryValueType: {
+                      type: 'NullableTypeAnnotation',
+                      typeAnnotation: {
+                        type: 'NumberTypeAnnotation',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getNumber',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'NumberTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'NumberTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getObject',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ObjectStruct',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'ObjectStruct',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getSet',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'ArrayTypeAnnotation',
+                elementType: {
+                  type: 'NumberTypeAnnotation',
+                },
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'ArrayTypeAnnotation',
+                    elementType: {
+                      type: 'NumberTypeAnnotation',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getString',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'StringTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'StringTypeAnnotation',
                   },
                 },
               ],
@@ -1725,12 +2153,11 @@ const CXX_ONLY_NATIVE_MODULES: SchemaType = {
             typeAnnotation: {
               type: 'FunctionTypeAnnotation',
               returnTypeAnnotation: {
-                type: 'UnionTypeAnnotation',
-                memberType: 'ObjectTypeAnnotation',
+                type: 'StringTypeAnnotation',
               },
               params: [
                 {
-                  name: 'chooseInt',
+                  name: 'x',
                   optional: false,
                   typeAnnotation: {
                     type: 'UnionTypeAnnotation',
@@ -1738,43 +2165,247 @@ const CXX_ONLY_NATIVE_MODULES: SchemaType = {
                   },
                 },
                 {
-                  name: 'chooseFloat',
-                  optional: false,
-                  typeAnnotation: {
-                    type: 'UnionTypeAnnotation',
-                    memberType: 'NumberTypeAnnotation',
-                  },
-                },
-                {
-                  name: 'chooseObject',
-                  optional: false,
-                  typeAnnotation: {
-                    type: 'UnionTypeAnnotation',
-                    memberType: 'ObjectTypeAnnotation',
-                  },
-                },
-                {
-                  name: 'chooseString',
+                  name: 'y',
                   optional: false,
                   typeAnnotation: {
                     type: 'UnionTypeAnnotation',
                     memberType: 'StringTypeAnnotation',
                   },
                 },
+                {
+                  name: 'z',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'UnionTypeAnnotation',
+                    memberType: 'ObjectTypeAnnotation',
+                  },
+                },
               ],
             },
           },
           {
-            name: 'getEnumReturn',
+            name: 'getValue',
             optional: false,
             typeAnnotation: {
               type: 'FunctionTypeAnnotation',
               returnTypeAnnotation: {
-                type: 'EnumDeclaration',
-                name: 'NumEnum',
-                memberType: 'NumberTypeAnnotation',
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ValueStruct',
+              },
+              params: [
+                {
+                  name: 'x',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'NumberTypeAnnotation',
+                  },
+                },
+                {
+                  name: 'y',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'StringTypeAnnotation',
+                  },
+                },
+                {
+                  name: 'z',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'ObjectStruct',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getValueWithCallback',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'callback',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'FunctionTypeAnnotation',
+                    returnTypeAnnotation: {
+                      type: 'VoidTypeAnnotation',
+                    },
+                    params: [
+                      {
+                        name: 'value',
+                        optional: false,
+                        typeAnnotation: {
+                          type: 'StringTypeAnnotation',
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getValueWithPromise',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'PromiseTypeAnnotation',
+                elementType: {
+                  type: 'StringTypeAnnotation',
+                },
+              },
+              params: [
+                {
+                  name: 'error',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'BooleanTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'getWithWithOptionalArgs',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'NullableTypeAnnotation',
+                typeAnnotation: {
+                  type: 'BooleanTypeAnnotation',
+                },
+              },
+              params: [
+                {
+                  name: 'optionalArg',
+                  optional: true,
+                  typeAnnotation: {
+                    type: 'BooleanTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'voidFunc',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
               },
               params: [],
+            },
+          },
+          {
+            name: 'setMenu',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'menuItem',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'MenuItem',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'emitCustomDeviceEvent',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
+              },
+              params: [
+                {
+                  name: 'eventName',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'StringTypeAnnotation',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'voidFuncThrows',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
+              },
+              params: [],
+            },
+          },
+
+          {
+            name: 'getObjectThrows',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ObjectStruct',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'ObjectStruct',
+                  },
+                },
+              ],
+            },
+          },
+          {
+            name: 'voidFuncAssert',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'VoidTypeAnnotation',
+              },
+              params: [],
+            },
+          },
+          {
+            name: 'getObjectAssert',
+            optional: false,
+            typeAnnotation: {
+              type: 'FunctionTypeAnnotation',
+              returnTypeAnnotation: {
+                type: 'TypeAliasTypeAnnotation',
+                name: 'ObjectStruct',
+              },
+              params: [
+                {
+                  name: 'arg',
+                  optional: false,
+                  typeAnnotation: {
+                    type: 'TypeAliasTypeAnnotation',
+                    name: 'ObjectStruct',
+                  },
+                },
+              ],
             },
           },
         ],
@@ -1792,6 +2423,7 @@ const SAMPLE_WITH_UPPERCASE_NAME: SchemaType = {
       enumMap: {},
       aliasMap: {},
       spec: {
+        eventEmitters: [],
         properties: [],
       },
       moduleName: 'SampleTurboModule',

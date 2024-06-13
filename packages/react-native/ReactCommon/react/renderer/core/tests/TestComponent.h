@@ -20,8 +20,6 @@
 
 #ifdef ANDROID
 #include <folly/dynamic.h>
-#include <react/renderer/mapbuffer/MapBuffer.h>
-#include <react/renderer/mapbuffer/MapBufferBuilder.h>
 #endif
 
 /**
@@ -35,14 +33,10 @@ struct TestState {
   TestState() = default;
 
 #ifdef ANDROID
-  TestState(TestState const &previousState, folly::dynamic &&data){};
+  TestState(const TestState& previousState, folly::dynamic&& data){};
 
   folly::dynamic getDynamic() const {
     return {};
-  }
-
-  MapBuffer getMapBuffer() const {
-    return MapBufferBuilder::EMPTY();
   }
 #endif
 };
@@ -54,9 +48,9 @@ class TestProps : public ViewProps {
   TestProps() = default;
 
   TestProps(
-      const PropsParserContext &context,
-      const TestProps &sourceProps,
-      const RawProps &rawProps)
+      const PropsParserContext& context,
+      const TestProps& sourceProps,
+      const RawProps& rawProps)
       : ViewProps(context, sourceProps, rawProps) {}
 };
 
@@ -82,7 +76,8 @@ class TestShadowNode final : public ConcreteViewShadowNode<
 
   facebook::react::Point _contentOriginOffset{};
 
-  facebook::react::Point getContentOriginOffset() const override {
+  facebook::react::Point getContentOriginOffset(
+      bool /*includeTransform*/) const override {
     return _contentOriginOffset;
   }
 };

@@ -5,15 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format strict-local
- * @flow
+ * @flow strict-local
  */
 
 import type {AnyAttributeType} from '../../Renderer/shims/ReactNativeTypes';
 
 import processAspectRatio from '../../StyleSheet/processAspectRatio';
 import processColor from '../../StyleSheet/processColor';
+import processFilter from '../../StyleSheet/processFilter';
 import processFontVariant from '../../StyleSheet/processFontVariant';
 import processTransform from '../../StyleSheet/processTransform';
+import processTransformOrigin from '../../StyleSheet/processTransformOrigin';
 import sizesDiffer from '../../Utilities/differ/sizesDiffer';
 
 const colorAttributes = {process: processColor};
@@ -111,6 +113,12 @@ const ReactNativeStyleAttributes: {[string]: AnyAttributeType, ...} = {
    * Transform
    */
   transform: {process: processTransform},
+  transformOrigin: {process: processTransformOrigin},
+
+  /**
+   * Filter
+   */
+  experimental_filter: {process: processFilter},
 
   /**
    * View
@@ -142,6 +150,7 @@ const ReactNativeStyleAttributes: {[string]: AnyAttributeType, ...} = {
   borderTopLeftRadius: true,
   borderTopRightRadius: true,
   borderTopStartRadius: true,
+  cursor: true,
   opacity: true,
   pointerEvents: true,
 

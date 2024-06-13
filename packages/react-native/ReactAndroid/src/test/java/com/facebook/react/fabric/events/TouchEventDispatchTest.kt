@@ -11,36 +11,42 @@ import android.util.DisplayMetrics
 import android.view.MotionEvent
 import android.view.MotionEvent.PointerCoords
 import android.view.MotionEvent.PointerProperties
-import com.facebook.react.bridge.*
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.JavaOnlyArray
+import com.facebook.react.bridge.JavaOnlyMap
+import com.facebook.react.bridge.ReactTestHelper
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableArray
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.fabric.FabricUIManager
+import com.facebook.react.modules.core.ReactChoreographer
 import com.facebook.react.uimanager.DisplayMetricsHolder
+import com.facebook.react.uimanager.ViewManagerRegistry
+import com.facebook.react.uimanager.events.EventDispatcher
 import com.facebook.react.uimanager.events.TouchEvent
 import com.facebook.react.uimanager.events.TouchEventCoalescingKeyHelper
 import com.facebook.react.uimanager.events.TouchEventType
+import com.facebook.testutils.fakes.FakeBatchEventDispatchedListener
+import com.facebook.testutils.shadows.ShadowSoLoader
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.*
+import org.mockito.MockedStatic
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.mockStatic
+import org.mockito.Mockito.spy
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
-import org.powermock.api.mockito.PowerMockito.mockStatic
-import org.powermock.api.mockito.PowerMockito.`when` as whenever
-import org.powermock.core.classloader.annotations.PowerMockIgnore
-import org.powermock.core.classloader.annotations.PrepareForTest
-import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor
-import org.powermock.modules.junit4.rule.PowerMockRule
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@PrepareForTest(Arguments::class, FabricUIManager::class)
-@SuppressStaticInitializationFor("com.facebook.react.fabric.FabricUIManager")
 @RunWith(RobolectricTestRunner::class)
-@PowerMockIgnore("org.mockito.*", "org.robolectric.*", "androidx.*", "android.*")
+@Config(shadows = [ShadowSoLoader::class])
 class TouchEventDispatchTest {
-  @get:Rule var rule = PowerMockRule()
   private val touchEventCoalescingKeyHelper = TouchEventCoalescingKeyHelper()
 
   /** Events (1 pointer): START -> MOVE -> MOVE -> UP */
@@ -453,58 +459,78 @@ class TouchEventDispatchTest {
                   listOf(
                       buildGesture(SURFACE_ID, TARGET_VIEW_ID, 1f, 3f, GESTURE_START_TIME, 0),
                       buildGesture(SURFACE_ID, TARGET_VIEW_ID, 2f, 1f, GESTURE_START_TIME, 1))))
-  private var dispatchedEvents: List<ReadableMap> = emptyList()
-  private lateinit var eventEmitter: FabricEventEmitter
+
+  private lateinit var eventDispatcher: EventDispatcher
   private lateinit var uiManager: FabricUIManager
+  private lateinit var arguments: MockedStatic<Arguments>
+  private lateinit var reactChoreographer: MockedStatic<ReactChoreographer>
 
   @Before
   fun setUp() {
-    mockStatic(Arguments::class.java)
-    mockStatic(FabricUIManager::class.java)
-    whenever(Arguments.createArray()).thenAnswer { JavaOnlyArray() }
-    whenever(Arguments.createMap()).thenAnswer { JavaOnlyMap() }
+    arguments = mockStatic(Arguments::class.java)
+    arguments.`when`<WritableArray> { Arguments.createArray() }.thenAnswer { JavaOnlyArray() }
+    arguments.`when`<WritableMap> { Arguments.createMap() }.thenAnswer { JavaOnlyMap() }
     val metrics = DisplayMetrics()
     metrics.xdpi = 1f
     metrics.ydpi = 1f
     metrics.density = 1f
     DisplayMetricsHolder.setWindowDisplayMetrics(metrics)
-    uiManager = mock(FabricUIManager::class.java)
-    eventEmitter = FabricEventEmitter(uiManager)
+
+    // We use a real FabricUIManager here as it's harder to mock with both static and non-static
+    // methods.
+    val reactContext = ReactTestHelper.createCatalystContextForTest()
+    val viewManagerRegistry = ViewManagerRegistry(emptyList())
+    val batchEventDispatchedListener = FakeBatchEventDispatchedListener()
+    uiManager =
+        spy(FabricUIManager(reactContext, viewManagerRegistry, batchEventDispatchedListener))
+    uiManager.initialize()
+
+    eventDispatcher = uiManager.getEventDispatcher()
+
+    // Ignore scheduled choreographer work
+    val reactChoreographerMock = mock(ReactChoreographer::class.java)
+    reactChoreographer = mockStatic(ReactChoreographer::class.java)
+    reactChoreographer
+        .`when`<ReactChoreographer> { ReactChoreographer.getInstance() }
+        .thenReturn(reactChoreographerMock)
+  }
+
+  @After
+  fun tearDown() {
+    arguments.close()
+    reactChoreographer.close()
   }
 
   @Test
   fun testFabric_startMoveEnd() {
     for (event in startMoveEndSequence) {
-      event.dispatchModern(eventEmitter)
+      eventDispatcher.dispatchEvent(event)
     }
     val argument = ArgumentCaptor.forClass(WritableMap::class.java)
     verify(uiManager, times(4))
-        .receiveEvent(
-            anyInt(), anyInt(), anyString(), anyBoolean(), anyInt(), argument.capture(), anyInt())
+        .receiveEvent(anyInt(), anyInt(), anyString(), anyBoolean(), argument.capture(), anyInt())
     Assert.assertEquals(startMoveEndExpectedSequence, argument.allValues)
   }
 
   @Test
   fun testFabric_startMoveCancel() {
     for (event in startMoveCancelSequence) {
-      event.dispatchModern(eventEmitter)
+      eventDispatcher.dispatchEvent(event)
     }
     val argument = ArgumentCaptor.forClass(WritableMap::class.java)
     verify(uiManager, times(6))
-        .receiveEvent(
-            anyInt(), anyInt(), anyString(), anyBoolean(), anyInt(), argument.capture(), anyInt())
+        .receiveEvent(anyInt(), anyInt(), anyString(), anyBoolean(), argument.capture(), anyInt())
     Assert.assertEquals(startMoveCancelExpectedSequence, argument.allValues)
   }
 
   @Test
   fun testFabric_startPointerUpCancel() {
     for (event in startPointerMoveUpSequence) {
-      event.dispatchModern(eventEmitter)
+      eventDispatcher.dispatchEvent(event)
     }
     val argument = ArgumentCaptor.forClass(WritableMap::class.java)
     verify(uiManager, times(6))
-        .receiveEvent(
-            anyInt(), anyInt(), anyString(), anyBoolean(), anyInt(), argument.capture(), anyInt())
+        .receiveEvent(anyInt(), anyInt(), anyString(), anyBoolean(), argument.capture(), anyInt())
     Assert.assertEquals(startPointerMoveUpExpectedSequence, argument.allValues)
   }
 

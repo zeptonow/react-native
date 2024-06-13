@@ -11,14 +11,16 @@
 'use strict';
 
 import type {RNTesterModule} from '../../types/RNTesterTypes';
-import * as React from 'react';
 
+import hotdog from '../../assets/hotdog.jpg';
+import * as React from 'react';
 import {
+  DynamicColorIOS,
+  Image,
+  Platform,
+  PlatformColor,
   StyleSheet,
   View,
-  PlatformColor,
-  Platform,
-  DynamicColorIOS,
 } from 'react-native';
 
 const styles = StyleSheet.create({
@@ -124,12 +126,26 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     borderColor: 'black',
   },
+  border9Percentages: {
+    borderWidth: 10,
+    borderTopLeftRadius: '20%',
+    borderBottomRightRadius: '10%',
+    borderColor: 'red',
+  },
   border10: {
     borderWidth: 10,
     backgroundColor: 'white',
     borderTopLeftRadius: 10,
     borderBottomRightRadius: 20,
     borderColor: 'black',
+    elevation: 10,
+  },
+  border10Percentages: {
+    borderWidth: 10,
+    backgroundColor: 'white',
+    borderTopLeftRadius: '20%',
+    borderBottomRightRadius: '10%',
+    borderColor: 'red',
     elevation: 10,
   },
   border11: {
@@ -200,6 +216,23 @@ const styles = StyleSheet.create({
         ? DynamicColorIOS({light: 'magenta', dark: 'cyan'})
         : 'black',
   },
+  borderWithoutClipping: {
+    borderWidth: 10,
+    overflow: 'visible',
+  },
+  borderWithClipping: {
+    borderWidth: 10,
+    overflow: 'hidden',
+  },
+  borderWithClippingAndRadius: {
+    borderWidth: 10,
+    borderRadius: 30,
+    overflow: 'hidden',
+  },
+  hotdog: {
+    width: 100,
+    height: 100,
+  },
 });
 
 export default ({
@@ -211,17 +244,25 @@ export default ({
       title: 'Equal-Width / Same-Color',
       name: 'equal-width-same-color',
       description: 'borderWidth & borderColor',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border1]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-equal-width-same-color"
+            style={[styles.box, styles.border1]}
+          />
+        );
       },
     },
     {
       title: 'Equal-Width / Same-Color',
       name: 'equal-width-same-color-border-radius',
       description: 'borderWidth & borderColor & borderRadius',
-      render: function ({testID}): React.Node {
+      render: function (): React.Node {
         return (
-          <View testID={testID} style={[styles.box, styles.borderRadius]} />
+          <View
+            testID="border-test-equal-width-same-color-border-radius"
+            style={[styles.box, styles.borderRadius]}
+          />
         );
       },
     },
@@ -229,24 +270,39 @@ export default ({
       title: 'Equal-Width Borders',
       name: 'equal-width-borders',
       description: 'borderWidth & border*Color',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border2]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-equal-width-borders"
+            style={[styles.box, styles.border2]}
+          />
+        );
       },
     },
     {
       title: 'Same-Color Borders',
       name: 'same-color-borders',
       description: 'border*Width & borderColor',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border3]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-same-color-borders"
+            style={[styles.box, styles.border3]}
+          />
+        );
       },
     },
     {
       title: 'Custom Borders',
       name: 'custom-borders',
       description: 'border*Width & border*Color',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border4]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-custom-borders"
+            style={[styles.box, styles.border4]}
+          />
+        );
       },
     },
     {
@@ -254,8 +310,13 @@ export default ({
       name: 'custom-borders-ios-1',
       description: 'border*Width & border*Color',
       platform: 'ios',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border5]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-custom-borders-ios-1"
+            style={[styles.box, styles.border5]}
+          />
+        );
       },
     },
     {
@@ -263,8 +324,13 @@ export default ({
       name: 'custom-borders-ios-2',
       description: 'border*Width & border*Color',
       platform: 'ios',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border6]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-custom-borders-ios-2"
+            style={[styles.box, styles.border6]}
+          />
+        );
       },
     },
     {
@@ -272,9 +338,11 @@ export default ({
       name: 'custom-borders-ios-clipping',
       description: 'borderRadius & clipping',
       platform: 'ios',
-      render: function ({testID}): React.Node {
+      render: function (): React.Node {
         return (
-          <View testID={testID} style={[styles.box, styles.border7]}>
+          <View
+            testID="border-test-custom-borders-ios-clipping"
+            style={[styles.box, styles.border7]}>
             <View style={styles.border7_inner} />
           </View>
         );
@@ -284,9 +352,9 @@ export default ({
       title: 'Single Borders',
       name: 'single-borders',
       description: 'top, left, bottom right',
-      render: function ({testID}): React.Node {
+      render: function (): React.Node {
         return (
-          <View testID={testID} style={styles.wrapper}>
+          <View testID="border-test-single-borders" style={styles.wrapper}>
             <View style={[styles.box, styles.border8, styles.border8Top]} />
             <View style={[styles.box, styles.border8, styles.border8Left]} />
             <View style={[styles.box, styles.border8, styles.border8Bottom]} />
@@ -299,8 +367,26 @@ export default ({
       title: 'Corner Radii',
       name: 'corner-radii',
       description: 'borderTopLeftRadius & borderBottomRightRadius',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border9]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-corner-radii"
+            style={[styles.box, styles.border9]}
+          />
+        );
+      },
+    },
+    {
+      title: 'Corner Radii (Percentages)',
+      name: 'corner-radii-percentages',
+      description: 'borderTopLeftRadius & borderBottomRightRadius',
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-corner-radii-percentages"
+            style={[styles.box, styles.border9Percentages]}
+          />
+        );
       },
     },
     {
@@ -308,48 +394,92 @@ export default ({
       name: 'corner-radii-elevation',
       description: 'borderTopLeftRadius & borderBottomRightRadius & elevation',
       platform: 'android',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border10]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-corner-radii-elevation"
+            style={[styles.box, styles.border10]}
+          />
+        );
+      },
+    },
+    {
+      title: 'Corner Radii / Elevation (Percentages)',
+      name: 'corner-radii-elevation-percentages',
+      description: 'borderTopLeftRadius & borderBottomRightRadius & elevation',
+      platform: 'android',
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-corner-radii-elevation-percentages"
+            style={[styles.box, styles.border10Percentages]}
+          />
+        );
       },
     },
     {
       title: 'CSS Trick - Triangle',
       name: 'css-trick-triangle',
       description: 'create a triangle by manipulating border colors and widths',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.border11]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-css-trick-triangle"
+            style={[styles.border11]}
+          />
+        );
       },
     },
     {
       title: 'Curved border(Left|Right|Bottom|Top)Width',
       name: 'curved-border-lrbt-width',
       description: 'Make a non-uniform width curved border',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border12]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-curved-border-lrbt-width"
+            style={[styles.box, styles.border12]}
+          />
+        );
       },
     },
     {
       title: 'Curved border(Left|Right|Bottom|Top)Color',
       name: 'curved-border-lrbt-color',
       description: 'Make a non-uniform color curved border',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border13]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-curved-border-lrbt-color"
+            style={[styles.box, styles.border13]}
+          />
+        );
       },
     },
     {
       title: 'Curved border(Top|Bottom)(Left|Right)Radius',
       name: 'curved-border-tb-lr-radius',
       description: 'Make a non-uniform radius curved border',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border14]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-curved-border-tb-lr-radius"
+            style={[styles.box, styles.border14]}
+          />
+        );
       },
     },
     {
       title: 'System color',
       name: 'system-color',
       description: 'Using a platform color',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border15]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-system-color"
+            style={[styles.box, styles.border15]}
+          />
+        );
       },
     },
     {
@@ -357,8 +487,58 @@ export default ({
       name: 'dynamic-color-ios',
       description: 'Using a custom dynamic color',
       platform: 'ios',
-      render: function ({testID}): React.Node {
-        return <View testID={testID} style={[styles.box, styles.border16]} />;
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-dynamic-color-ios"
+            style={[styles.box, styles.border16]}
+          />
+        );
+      },
+    },
+    {
+      title: 'Child without clipping',
+      name: 'child-no-clipping',
+      description:
+        '"overflow: visible" will cause child content to show above borders',
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-child-no-clipping"
+            style={[styles.box, styles.borderWithoutClipping]}>
+            <Image source={hotdog} style={styles.hotdog} />
+          </View>
+        );
+      },
+    },
+    {
+      title: 'Child clipping',
+      name: 'child-clipping',
+      description:
+        '"overflow: hidden" will cause child content to be clipped to borders',
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-child-clipping"
+            style={[styles.box, styles.borderWithClipping]}>
+            <Image source={hotdog} style={styles.hotdog} />
+          </View>
+        );
+      },
+    },
+    {
+      title: 'Child clipping with radius',
+      name: 'child-clipping-radius',
+      description:
+        '"overflow: hidden" will cause child content to be clipped to rounded corners',
+      render: function (): React.Node {
+        return (
+          <View
+            testID="border-test-child-clipping-radius"
+            style={[styles.box, styles.borderWithClippingAndRadius]}>
+            <Image source={hotdog} style={styles.hotdog} />
+          </View>
+        );
       },
     },
   ],

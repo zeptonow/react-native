@@ -8,10 +8,10 @@
  * @flow
  */
 
-import React, {useEffect, useState} from 'react';
-import {Animated, StyleSheet, Text, View} from 'react-native';
+import type {Element, Node} from 'react';
 
-import type {Node, Element} from 'react';
+import React, {useEffect, useState} from 'react';
+import {Animated, Easing, StyleSheet, Text, View} from 'react-native';
 
 function AnimateTransformSingleProp() {
   const [theta] = useState(new Animated.Value(45));
@@ -46,6 +46,39 @@ function AnimateTransformSingleProp() {
         ]}>
         <Text style={styles.flipText}>This text is flipping great.</Text>
       </Animated.View>
+    </View>
+  );
+}
+
+function TransformOriginExample() {
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 5000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, [rotateAnim]);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <View style={styles.transformOriginWrapper}>
+      <Animated.View
+        style={[
+          styles.transformOriginView,
+          {
+            transform: [{rotate: spin}],
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -104,6 +137,10 @@ function Flip() {
       </Animated.View>
     </View>
   );
+}
+
+function TranslatePercentage() {
+  return <View style={styles.translatePercentageView} />;
 }
 
 const styles = StyleSheet.create({
@@ -214,6 +251,7 @@ const styles = StyleSheet.create({
     marginVertical: 40,
     flex: 1,
     alignSelf: 'center',
+    zIndex: 0,
   },
   flipCard: {
     width: 200,
@@ -233,6 +271,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'white',
     fontWeight: 'bold',
+  },
+  transformOriginWrapper: {
+    alignItems: 'center',
+  },
+  transformOriginView: {
+    backgroundColor: 'pink',
+    width: 100,
+    height: 100,
+    transformOrigin: 'top left',
+  },
+  translatePercentageView: {
+    transform: 'translate(50%)',
+    padding: 50,
+    alignSelf: 'flex-start',
+    backgroundColor: 'lightblue',
   },
 });
 
@@ -344,6 +397,20 @@ exports.examples = [
           <View style={[styles.box7, styles.box7Transform]} />
         </View>
       );
+    },
+  },
+  {
+    title: 'Transform origin',
+    description: "transformOrigin: 'top left'",
+    render(): Node {
+      return <TransformOriginExample />;
+    },
+  },
+  {
+    title: 'Translate Percentage',
+    description: "transform: 'translate(50%)'",
+    render(): Node {
+      return <TranslatePercentage />;
     },
   },
 ];
