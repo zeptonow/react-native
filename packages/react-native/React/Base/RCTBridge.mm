@@ -20,6 +20,8 @@
 #import <jsinspector-modern/ReactCdp.h>
 #import <optional>
 #import "RCTDevLoadingViewProtocol.h"
+#import "RCTInspectorNetworkHelper.h"
+#import "RCTInspectorUtils.h"
 #import "RCTJSThread.h"
 #import "RCTLog.h"
 #import "RCTModuleData.h"
@@ -40,6 +42,97 @@ NSArray<Class> *RCTGetModuleClasses(void)
   return result;
 }
 
+NSSet<NSString *> *getCoreModuleClasses(void);
+NSSet<NSString *> *getCoreModuleClasses(void)
+{
+  static NSSet<NSString *> *coreModuleClasses = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    coreModuleClasses = [NSSet setWithArray:@[
+      @"RCTViewManager",
+      @"RCTActivityIndicatorViewManager",
+      @"RCTDebuggingOverlayManager",
+      @"RCTModalHostViewManager",
+      @"RCTModalManager",
+      @"RCTRefreshControlManager",
+      @"RCTSafeAreaViewManager",
+      @"RCTScrollContentViewManager",
+      @"RCTScrollViewManager",
+      @"RCTSwitchManager",
+      @"RCTUIManager",
+      @"RCTAccessibilityManager",
+      @"RCTActionSheetManager",
+      @"RCTAlertManager",
+      @"RCTAppearance",
+      @"RCTAppState",
+      @"RCTClipboard",
+      @"RCTDeviceInfo",
+      @"RCTDevLoadingView",
+      @"RCTDevMenu",
+      @"RCTDevSettings",
+      @"RCTDevToolsRuntimeSettingsModule",
+      @"RCTEventDispatcher",
+      @"RCTExceptionsManager",
+      @"RCTI18nManager",
+      @"RCTKeyboardObserver",
+      @"RCTLogBox",
+      @"RCTPerfMonitor",
+      @"RCTPlatform",
+      @"RCTRedBox",
+      @"RCTSourceCode",
+      @"RCTStatusBarManager",
+      @"RCTTiming",
+      @"RCTWebSocketModule",
+      @"RCTNativeAnimatedModule",
+      @"RCTNativeAnimatedTurboModule",
+      @"RCTBlobManager",
+      @"RCTFileReaderModule",
+      @"RCTBundleAssetImageLoader",
+      @"RCTGIFImageDecoder",
+      @"RCTImageEditingManager",
+      @"RCTImageLoader",
+      @"RCTImageStoreManager",
+      @"RCTImageViewManager",
+      @"RCTLocalAssetImageLoader",
+      @"RCTLinkingManager",
+      @"RCTDataRequestHandler",
+      @"RCTFileRequestHandler",
+      @"RCTHTTPRequestHandler",
+      @"RCTNetworking",
+      @"RCTPushNotificationManager",
+      @"RCTSettingsManager",
+      @"RCTBaseTextViewManager",
+      @"RCTBaseTextInputViewManager",
+      @"RCTInputAccessoryViewManager",
+      @"RCTMultilineTextInputViewManager",
+      @"RCTRawTextViewManager",
+      @"RCTSinglelineTextInputViewManager",
+      @"RCTTextViewManager",
+      @"RCTVirtualTextViewManager",
+      @"RCTVibration",
+    ]];
+  });
+
+  return coreModuleClasses;
+}
+
+static NSMutableArray<NSString *> *modulesLoadedWithOldArch;
+void addModuleLoadedWithOldArch(NSString *);
+void addModuleLoadedWithOldArch(NSString *moduleName)
+{
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    modulesLoadedWithOldArch = [NSMutableArray new];
+  });
+
+  [modulesLoadedWithOldArch addObject:moduleName];
+}
+
+NSMutableArray<NSString *> *getModulesLoadedWithOldArch(void)
+{
+  return modulesLoadedWithOldArch;
+}
+
 /**
  * Register the given class as a bridge module. All modules must be registered
  * prior to the first bridge initialization.
@@ -48,6 +141,10 @@ NSArray<Class> *RCTGetModuleClasses(void)
 void RCTRegisterModule(Class);
 void RCTRegisterModule(Class moduleClass)
 {
+  if (RCTAreLegacyLogsEnabled() && RCTIsNewArchEnabled() &&
+      ![getCoreModuleClasses() containsObject:[moduleClass description]]) {
+    addModuleLoadedWithOldArch([moduleClass description]);
+  }
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     RCTModuleClasses = [NSMutableArray new];
@@ -146,16 +243,6 @@ void RCTSetTurboModuleInteropBridgeProxyLogLevel(RCTBridgeProxyLoggingLevel logL
   bridgeProxyLoggingLevel = logLevel;
 }
 
-static BOOL useTurboModuleInteropForAllTurboModules = NO;
-BOOL RCTTurboModuleInteropForAllTurboModulesEnabled(void)
-{
-  return useTurboModuleInteropForAllTurboModules;
-}
-void RCTEnableTurboModuleInteropForAllTurboModules(BOOL enabled)
-{
-  useTurboModuleInteropForAllTurboModules = enabled;
-}
-
 // Turn on TurboModule sync execution of void methods
 static BOOL gTurboModuleEnableSyncVoidMethods = NO;
 BOOL RCTTurboModuleSyncVoidMethodsEnabled(void)
@@ -181,21 +268,30 @@ void RCTUIManagerSetDispatchAccessibilityManagerInitOntoMain(BOOL enabled)
 class RCTBridgeHostTargetDelegate : public facebook::react::jsinspector_modern::HostTargetDelegate {
  public:
   RCTBridgeHostTargetDelegate(RCTBridge *bridge)
-      : bridge_(bridge), pauseOverlayController_([[RCTPausedInDebuggerOverlayController alloc] init])
+      : bridge_(bridge),
+        pauseOverlayController_([[RCTPausedInDebuggerOverlayController alloc] init]),
+        networkHelper_([[RCTInspectorNetworkHelper alloc] init])
   {
   }
 
   facebook::react::jsinspector_modern::HostTargetMetadata getMetadata() override
   {
+    auto metadata = [RCTInspectorUtils getHostMetadata];
+
     return {
+        .appDisplayName = [metadata.appDisplayName UTF8String],
+        .appIdentifier = [metadata.appIdentifier UTF8String],
+        .deviceName = [metadata.deviceName UTF8String],
         .integrationName = "iOS Bridge (RCTBridge)",
+        .platform = [metadata.platform UTF8String],
+        .reactNativeVersion = [metadata.reactNativeVersion UTF8String],
     };
   }
 
   void onReload(const PageReloadRequest &request) override
   {
     RCTAssertMainQueue();
-    [bridge_ reload];
+    RCTTriggerReloadCommandListeners(@"Reloading due to PageReloadRequest from DevTools.");
   }
 
   void onSetPausedInDebuggerMessage(const OverlaySetPausedInDebuggerMessageRequest &request) override
@@ -221,9 +317,16 @@ class RCTBridgeHostTargetDelegate : public facebook::react::jsinspector_modern::
     }
   }
 
+  void loadNetworkResource(const RCTInspectorLoadNetworkResourceRequest &params, RCTInspectorNetworkExecutor executor)
+      override
+  {
+    [networkHelper_ loadNetworkResourceWithParams:params executor:executor];
+  }
+
  private:
   __weak RCTBridge *bridge_;
   RCTPausedInDebuggerOverlayController *pauseOverlayController_;
+  RCTInspectorNetworkHelper *networkHelper_;
 };
 
 @interface RCTBridge () <RCTReloadListener>
@@ -294,6 +397,7 @@ RCT_NOT_IMPLEMENTED(-(instancetype)init)
 
 - (void)dealloc
 {
+  RCTBridge *batchedBridge = self.batchedBridge;
   /**
    * This runs only on the main thread, but crashes the subclass
    * RCTAssertMainQueue();
@@ -313,7 +417,17 @@ RCT_NOT_IMPLEMENTED(-(instancetype)init)
     RCTExecuteOnMainQueue(^{
       facebook::react::jsinspector_modern::getInspectorInstance().removePage(*inspectorPageId);
       inspectorPageId.reset();
-      inspectorTarget.reset();
+      // NOTE: RCTBridgeHostTargetDelegate holds a weak reference to RCTBridge.
+      // Conditionally call `inspectorTarget.reset()` to avoid a crash.
+      if (batchedBridge) {
+        [batchedBridge
+            dispatchBlock:^{
+              inspectorTarget.reset();
+            }
+                    queue:RCTJSThread];
+      } else {
+        inspectorTarget.reset();
+      }
     });
   }
 }
@@ -454,7 +568,7 @@ RCT_NOT_IMPLEMENTED(-(instancetype)init)
         });
     __weak RCTBridge *weakSelf = self;
     _inspectorPageId = facebook::react::jsinspector_modern::getInspectorInstance().addPage(
-        "React Native Bridge (Experimental)",
+        "React Native Bridge",
         /* vm */ "",
         [weakSelf](std::unique_ptr<facebook::react::jsinspector_modern::IRemoteConnection> remote)
             -> std::unique_ptr<facebook::react::jsinspector_modern::ILocalConnection> {

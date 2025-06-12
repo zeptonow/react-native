@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {Command} from '@react-native-community/cli-types';
@@ -96,11 +95,12 @@ const startCommand: Command = {
       description: 'Disables interactive mode',
     },
     {
-      name: '--experimental-debugger',
+      name: '--client-logs',
       description:
-        "[Experimental] Enable the new debugger experience and 'j' to " +
-        'debug. This enables the new frontend experience only: connection ' +
-        'reliability and some basic features are unstable in this release.',
+        '[Deprecated] Enable plain text JavaScript log streaming for all ' +
+        'connected apps. This feature is deprecated and will be removed in ' +
+        'future.',
+      default: false,
     },
   ],
 };

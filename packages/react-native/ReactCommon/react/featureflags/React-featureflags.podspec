@@ -33,7 +33,7 @@ Pod::Spec.new do |s|
   s.source                 = source
   s.source_files           = "*.{cpp,h}"
   s.header_dir             = "react/featureflags"
-  s.pod_target_xcconfig    = { "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+  s.pod_target_xcconfig    = { "CLANG_CXX_LANGUAGE_STANDARD" => rct_cxx_language_standard(),
                                "HEADER_SEARCH_PATHS" => header_search_paths.join(' '),
                                "DEFINES_MODULE" => "YES" }
 
@@ -41,4 +41,6 @@ Pod::Spec.new do |s|
     s.module_name            = "React_featureflags"
     s.header_mappings_dir  = "../.."
   end
+
+  add_rn_third_party_dependencies(s)
 end

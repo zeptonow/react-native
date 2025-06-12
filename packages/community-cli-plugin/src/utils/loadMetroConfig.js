@@ -6,16 +6,17 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {Config} from '@react-native-community/cli-types';
 import type {ConfigT, InputConfigT, YargArguments} from 'metro-config';
 
+import {CLIError} from './errors';
 import {reactNativePlatformResolver} from './metroPlatformResolver';
-import {CLIError, logger} from '@react-native-community/cli-tools';
-import {loadConfig, mergeConfig, resolveConfig} from 'metro-config';
+import {loadConfig, resolveConfig} from 'metro-config';
 import path from 'path';
+
+const debug = require('debug')('ReactNative:CommunityCliPlugin');
 
 export type {Config};
 
@@ -29,7 +30,7 @@ export type ConfigLoadingContext = $ReadOnly<{
 /**
  * Get the config options to override based on RN CLI inputs.
  */
-function getOverrideConfig(
+function getCommunityCliDefaultConfig(
   ctx: ConfigLoadingContext,
   config: ConfigT,
 ): InputConfigT {
@@ -84,6 +85,31 @@ export default async function loadMetroConfig(
   ctx: ConfigLoadingContext,
   options: YargArguments = {},
 ): Promise<ConfigT> {
+  let RNMetroConfig = null;
+  try {
+    RNMetroConfig = require('@react-native/metro-config');
+  } catch (e) {
+    throw new Error(
+      "Cannot resolve `@react-native/metro-config`. Ensure it is listed in your project's `devDependencies`.",
+    );
+  }
+
+  // Get the RN defaults before our customisations
+  const defaultConfig = RNMetroConfig.getDefaultConfig(ctx.root);
+  // Unflag the config as being loaded - it must be loaded again in userland.
+  global.__REACT_NATIVE_METRO_CONFIG_LOADED = false;
+
+  // Add our defaults to `@react-native/metro-config` before the user config
+  // loads them.
+  if (typeof RNMetroConfig.setFrameworkDefaults !== 'function') {
+    throw new Error(
+      '`@react-native/metro-config` does not have the expected API. Ensure it matches your React Native version.',
+    );
+  }
+  RNMetroConfig.setFrameworkDefaults(
+    getCommunityCliDefaultConfig(ctx, defaultConfig),
+  );
+
   const cwd = ctx.root;
   const projectConfig = await resolveConfig(options.config, cwd);
 
@@ -91,29 +117,24 @@ export default async function loadMetroConfig(
     throw new CLIError(`No Metro config found in ${cwd}`);
   }
 
-  logger.debug(`Reading Metro config from ${projectConfig.filepath}`);
+  debug(`Reading Metro config from ${projectConfig.filepath}`);
 
   if (!global.__REACT_NATIVE_METRO_CONFIG_LOADED) {
     const warning = `
 =================================================================================================
 From React Native 0.73, your project's Metro config should extend '@react-native/metro-config'
 or it will fail to build. Please copy the template at:
-https://github.com/facebook/react-native/blob/main/packages/react-native/template/metro.config.js
+https://github.com/react-native-community/template/blob/main/template/metro.config.js
 This warning will be removed in future (https://github.com/facebook/metro/issues/1018).
 =================================================================================================
     `;
 
     for (const line of warning.trim().split('\n')) {
-      logger.warn(line);
+      console.warn(line);
     }
   }
-
-  const config = await loadConfig({
+  return loadConfig({
     cwd,
     ...options,
   });
-
-  const overrideConfig = getOverrideConfig(ctx, config);
-
-  return mergeConfig(config, overrideConfig);
 }

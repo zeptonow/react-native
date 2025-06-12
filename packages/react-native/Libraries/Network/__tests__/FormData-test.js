@@ -4,26 +4,21 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict
  * @format
- * @oncall react_native
  */
 
-'use strict';
-
-const FormData = require('../FormData');
+import FormData from '../FormData';
 
 describe('FormData', function () {
-  var formData;
+  let formData;
 
   beforeEach(() => {
     formData = new FormData();
   });
 
-  afterEach(() => {
-    formData = null;
-  });
-
   it('should return non blob null', function () {
+    // $FlowFixMe[incompatible-call]
     formData.append('null', null);
 
     const expectedPart = {
@@ -48,8 +43,7 @@ describe('FormData', function () {
       type: 'image/jpeg',
       name: 'photo.jpg',
       headers: {
-        'content-disposition':
-          'form-data; name="photo"; filename="photo.jpg"; filename*=utf-8\'\'photo.jpg',
+        'content-disposition': 'form-data; name="photo"; filename="photo.jpg"',
         'content-type': 'image/jpeg',
       },
       fieldName: 'photo',
@@ -70,7 +64,7 @@ describe('FormData', function () {
       name: '测试photo.jpg',
       headers: {
         'content-disposition':
-          'form-data; name="photo"; filename="测试photo.jpg"; filename*=utf-8\'\'%E6%B5%8B%E8%AF%95photo.jpg',
+          'form-data; name="photo"; filename="%E6%B5%8B%E8%AF%95photo.jpg"',
         'content-type': 'image/jpeg',
       },
       fieldName: 'photo',
@@ -79,6 +73,7 @@ describe('FormData', function () {
   });
 
   it('should return non blob array', function () {
+    // $FlowFixMe[incompatible-call]
     formData.append('array', [
       true,
       false,

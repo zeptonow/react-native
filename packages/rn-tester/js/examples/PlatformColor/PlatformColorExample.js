@@ -4,15 +4,19 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
-import Platform from 'react-native/Libraries/Utilities/Platform';
-
-const React = require('react');
-const ReactNative = require('react-native');
-const {DynamicColorIOS, PlatformColor, StyleSheet, Text, View} = ReactNative;
+import RNTesterText from '../../components/RNTesterText';
+import React from 'react';
+import {
+  DynamicColorIOS,
+  Platform,
+  PlatformColor,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 function PlatformColorsExample() {
   function createTable() {
@@ -175,7 +179,7 @@ function PlatformColorsExample() {
     for (let color of colors) {
       table.push(
         <View style={styles.row} key={color.label}>
-          <Text style={styles.labelCell}>{color.label}</Text>
+          <RNTesterText style={styles.labelCell}>{color.label}</RNTesterText>
           <View
             style={{
               ...styles.colorCell,
@@ -213,7 +217,7 @@ function FallbackColorsExample() {
   return (
     <View style={styles.column}>
       <View style={styles.row}>
-        <Text style={styles.labelCell}>{color.label}</Text>
+        <RNTesterText style={styles.labelCell}>{color.label}</RNTesterText>
         <View
           style={{
             ...styles.colorCell,
@@ -230,11 +234,11 @@ function DynamicColorsExample() {
   return Platform.OS === 'ios' ? (
     <View style={styles.column}>
       <View style={styles.row}>
-        <Text style={styles.labelCell}>
+        <RNTesterText style={styles.labelCell}>
           DynamicColorIOS({'{\n'}
           {'  '}light: 'red', dark: 'blue'{'\n'}
           {'}'})
-        </Text>
+        </RNTesterText>
         <View
           style={{
             ...styles.colorCell,
@@ -243,11 +247,11 @@ function DynamicColorsExample() {
         />
       </View>
       <View style={styles.row}>
-        <Text style={styles.labelCell}>
+        <RNTesterText style={styles.labelCell}>
           DynamicColorIOS({'{\n'}
           {'  '}light: 'red', dark: 'blue'{'\n'}
           {'}'})
-        </Text>
+        </RNTesterText>
         <View
           style={{
             ...styles.colorCell,
@@ -257,12 +261,12 @@ function DynamicColorsExample() {
         />
       </View>
       <View style={styles.row}>
-        <Text style={styles.labelCell}>
+        <RNTesterText style={styles.labelCell}>
           DynamicColorIOS({'{\n'}
           {'  '}light: PlatformColor('systemBlueColor'),{'\n'}
           {'  '}dark: PlatformColor('systemRedColor'),{'\n'}
           {'}'})
-        </Text>
+        </RNTesterText>
         <View
           style={{
             ...styles.colorCell,
@@ -275,7 +279,9 @@ function DynamicColorsExample() {
       </View>
     </View>
   ) : (
-    <Text style={styles.labelCell}>Not applicable on this platform</Text>
+    <RNTesterText style={styles.labelCell}>
+      Not applicable on this platform
+    </RNTesterText>
   );
 }
 
@@ -283,13 +289,13 @@ function VariantColorsExample() {
   return (
     <View style={styles.column}>
       <View style={styles.row}>
-        <Text style={styles.labelCell}>
+        <RNTesterText style={styles.labelCell}>
           {Platform.select({
             ios: "DynamicColorIOS({light: 'red', dark: 'blue'})",
             android: "PlatformColor('?attr/colorAccent')",
             default: 'Unexpected Platform.OS: ' + Platform.OS,
           })}
-        </Text>
+        </RNTesterText>
         <View
           style={{
             ...styles.colorCell,
@@ -314,7 +320,6 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     ...Platform.select({
       ios: {color: PlatformColor('labelColor')},
-      default: {color: 'black'},
     }),
   },
   colorCell: {flex: 0.25, alignItems: 'stretch'},
@@ -328,25 +333,25 @@ exports.description =
 exports.examples = [
   {
     title: 'Platform Colors',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <PlatformColorsExample />;
     },
   },
   {
     title: 'Fallback Colors',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <FallbackColorsExample />;
     },
   },
   {
     title: 'iOS Dynamic Colors',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <DynamicColorsExample />;
     },
   },
   {
     title: 'Variant Colors',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <VariantColorsExample />;
     },
   },

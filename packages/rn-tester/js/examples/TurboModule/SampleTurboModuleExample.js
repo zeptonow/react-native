@@ -4,25 +4,20 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
-import type {RootTag} from 'react-native/Libraries/ReactNative/RootTag';
+import type {EventSubscription, RootTag} from 'react-native';
 
+import RNTesterText from '../../components/RNTesterText';
 import styles from './TurboModuleExampleCommon';
 import * as React from 'react';
-import {
-  FlatList,
-  RootTagContext,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {FlatList, RootTagContext, TouchableOpacity, View} from 'react-native';
 import NativeSampleTurboModule from 'react-native/Libraries/TurboModule/samples/NativeSampleTurboModule';
 import {EnumInt} from 'react-native/Libraries/TurboModule/samples/NativeSampleTurboModule';
 
-type State = {|
+type State = {
   testResults: {
     [string]: {
       type: string,
@@ -31,7 +26,7 @@ type State = {|
     },
     ...
   },
-|};
+};
 
 type Examples =
   | 'callback'
@@ -66,8 +61,9 @@ type ErrorExamples =
   | 'getObjectAssert'
   | 'promiseAssert';
 
-class SampleTurboModuleExample extends React.Component<{||}, State> {
-  static contextType: React$Context<RootTag> = RootTagContext;
+class SampleTurboModuleExample extends React.Component<{}, State> {
+  static contextType: React.Context<RootTag> = RootTagContext;
+  eventSubscriptions: EventSubscription[] = [];
 
   state: State = {
     testResults: {},
@@ -198,14 +194,16 @@ class SampleTurboModuleExample extends React.Component<{||}, State> {
     const result = this.state.testResults[name] || {};
     return (
       <View style={styles.result}>
-        <Text style={[styles.value]}>{JSON.stringify(result.value)}</Text>
-        <Text style={[styles.type]}>{result.type}</Text>
+        <RNTesterText style={[styles.value]}>
+          {JSON.stringify(result.value)}
+        </RNTesterText>
+        <RNTesterText style={[styles.type]}>{result.type}</RNTesterText>
       </View>
     );
   }
 
   componentDidMount(): void {
-    if (global.__turboModuleProxy == null) {
+    if (global.__turboModuleProxy == null && global.RN$Bridgeless == null) {
       throw new Error(
         'Cannot load this example because TurboModule is not configured.',
       );
@@ -217,6 +215,30 @@ class SampleTurboModuleExample extends React.Component<{||}, State> {
       throw new Error(
         'The JSI bindings for SampleTurboModule are not installed.',
       );
+    }
+    this.eventSubscriptions.push(
+      NativeSampleTurboModule.onPress(value => console.log('onPress: ()')),
+    );
+    this.eventSubscriptions.push(
+      NativeSampleTurboModule.onClick(value =>
+        console.log(`onClick: (${value})`),
+      ),
+    );
+    this.eventSubscriptions.push(
+      NativeSampleTurboModule.onChange(value =>
+        console.log(`onChange: (${JSON.stringify(value)})`),
+      ),
+    );
+    this.eventSubscriptions.push(
+      NativeSampleTurboModule.onSubmit(value =>
+        console.log(`onSubmit: (${JSON.stringify(value)})`),
+      ),
+    );
+  }
+
+  componentWillUnmount() {
+    for (const subscription of this.eventSubscriptions) {
+      subscription.remove();
     }
   }
 
@@ -232,12 +254,16 @@ class SampleTurboModuleExample extends React.Component<{||}, State> {
                 this._setResult(item, this._tests[item]()),
               )
             }>
-            <Text style={styles.buttonTextLarge}>Run all tests</Text>
+            <RNTesterText style={styles.buttonTextLarge}>
+              Run all tests
+            </RNTesterText>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => this.setState({testResults: {}})}
             style={[styles.column, styles.button]}>
-            <Text style={styles.buttonTextLarge}>Clear results</Text>
+            <RNTesterText style={styles.buttonTextLarge}>
+              Clear results
+            </RNTesterText>
           </TouchableOpacity>
         </View>
         <FlatList
@@ -249,14 +275,16 @@ class SampleTurboModuleExample extends React.Component<{||}, State> {
               <TouchableOpacity
                 style={[styles.column, styles.button]}
                 onPress={e => this._setResult(item, this._tests[item]())}>
-                <Text style={styles.buttonText}>{item}</Text>
+                <RNTesterText style={styles.buttonText}>{item}</RNTesterText>
               </TouchableOpacity>
               <View style={[styles.column]}>{this._renderResult(item)}</View>
             </View>
           )}
         />
         <View style={styles.item}>
-          <Text style={styles.buttonTextLarge}>Report errors tests</Text>
+          <RNTesterText style={styles.buttonTextLarge}>
+            Report errors tests
+          </RNTesterText>
         </View>
         <FlatList
           // $FlowFixMe[incompatible-type-arg]
@@ -267,7 +295,7 @@ class SampleTurboModuleExample extends React.Component<{||}, State> {
               <TouchableOpacity
                 style={[styles.column, styles.button]}
                 onPress={e => this._setResult(item, this._errorTests[item]())}>
-                <Text style={styles.buttonText}>{item}</Text>
+                <RNTesterText style={styles.buttonText}>{item}</RNTesterText>
               </TouchableOpacity>
               <View style={[styles.column]}>{this._renderResult(item)}</View>
             </View>

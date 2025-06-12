@@ -15,11 +15,11 @@ import com.facebook.react.R
 import com.facebook.react.bridge.Callback
 import com.facebook.react.bridge.JavaOnlyMap
 import com.facebook.react.bridge.ReactApplicationContext
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.*
-import org.junit.Assert.*
 import org.junit.runner.RunWith
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when` as whenever
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -67,83 +67,92 @@ class DialogModuleTest {
           putBoolean("cancelable", false)
         }
 
-    dialogModule.showAlert(options, null, null)
+    dialogModule.showAlert(options, SimpleCallback(), SimpleCallback())
     shadowOf(getMainLooper()).idle()
 
     val fragment = getFragment()
 
-    assertFalse(fragment.isCancelable)
+    assertThat(fragment.isCancelable).isFalse()
 
     val dialog = fragment.dialog as AlertDialog
-    assertEquals("OK", dialog.getButton(DialogInterface.BUTTON_POSITIVE).text.toString())
-    assertEquals("Cancel", dialog.getButton(DialogInterface.BUTTON_NEGATIVE).text.toString())
-    assertEquals("Later", dialog.getButton(DialogInterface.BUTTON_NEUTRAL).text.toString())
+    assertThat(dialog.getButton(DialogInterface.BUTTON_POSITIVE).text.toString()).isEqualTo("OK")
+    assertThat(dialog.getButton(DialogInterface.BUTTON_NEGATIVE).text.toString())
+        .isEqualTo("Cancel")
+    assertThat(dialog.getButton(DialogInterface.BUTTON_NEUTRAL).text.toString()).isEqualTo("Later")
   }
 
   @Test
   fun testCallbackPositive() {
     val options = JavaOnlyMap().apply { putString("buttonPositive", "OK") }
 
+    val errorCallback = SimpleCallback()
     val actionCallback = SimpleCallback()
-    dialogModule.showAlert(options, null, actionCallback)
+    dialogModule.showAlert(options, errorCallback, actionCallback)
     shadowOf(getMainLooper()).idle()
 
     val dialog = getFragment().dialog as AlertDialog
     dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
     shadowOf(getMainLooper()).idle()
 
-    assertEquals(1, actionCallback.calls)
-    assertEquals(DialogModule.ACTION_BUTTON_CLICKED, actionCallback.args?.get(0))
-    assertEquals(DialogInterface.BUTTON_POSITIVE, actionCallback.args?.get(1))
+    assertThat(errorCallback.calls).isEqualTo(0)
+    assertThat(actionCallback.calls).isEqualTo(1)
+    assertThat(actionCallback.args?.get(0)).isEqualTo(DialogModule.ACTION_BUTTON_CLICKED)
+    assertThat(actionCallback.args?.get(1)).isEqualTo(DialogInterface.BUTTON_POSITIVE)
   }
 
   @Test
   fun testCallbackNegative() {
     val options = JavaOnlyMap().apply { putString("buttonNegative", "Cancel") }
 
+    val errorCallback = SimpleCallback()
     val actionCallback = SimpleCallback()
-    dialogModule.showAlert(options, null, actionCallback)
+    dialogModule.showAlert(options, errorCallback, actionCallback)
     shadowOf(getMainLooper()).idle()
 
     val dialog = getFragment().dialog as AlertDialog
     dialog.getButton(DialogInterface.BUTTON_NEGATIVE).performClick()
     shadowOf(getMainLooper()).idle()
 
-    assertEquals(1, actionCallback.calls)
-    assertEquals(DialogModule.ACTION_BUTTON_CLICKED, actionCallback.args?.get(0))
-    assertEquals(DialogInterface.BUTTON_NEGATIVE, actionCallback.args?.get(1))
+    assertThat(errorCallback.calls).isEqualTo(0)
+    assertThat(actionCallback.calls).isEqualTo(1)
+    assertThat(actionCallback.args?.get(0)).isEqualTo(DialogModule.ACTION_BUTTON_CLICKED)
+    assertThat(actionCallback.args?.get(1)).isEqualTo(DialogInterface.BUTTON_NEGATIVE)
   }
 
   @Test
   fun testCallbackNeutral() {
     val options = JavaOnlyMap().apply { putString("buttonNeutral", "Later") }
 
+    val errorCallback = SimpleCallback()
     val actionCallback = SimpleCallback()
-    dialogModule.showAlert(options, null, actionCallback)
+    dialogModule.showAlert(options, errorCallback, actionCallback)
     shadowOf(getMainLooper()).idle()
 
     val dialog = getFragment().dialog as AlertDialog
     dialog.getButton(DialogInterface.BUTTON_NEUTRAL).performClick()
     shadowOf(getMainLooper()).idle()
 
-    assertEquals(1, actionCallback.calls)
-    assertEquals(DialogModule.ACTION_BUTTON_CLICKED, actionCallback.args?.get(0))
-    assertEquals(DialogInterface.BUTTON_NEUTRAL, actionCallback.args?.get(1))
+    assertThat(errorCallback.calls).isEqualTo(0)
+    assertThat(actionCallback.calls).isEqualTo(1)
+    assertThat(actionCallback.args?.get(0)).isEqualTo(DialogModule.ACTION_BUTTON_CLICKED)
+    assertThat(actionCallback.args?.get(1)).isEqualTo(DialogInterface.BUTTON_NEUTRAL)
   }
 
   @Test
   fun testCallbackDismiss() {
     val options = JavaOnlyMap()
 
+    val errorCallback = SimpleCallback()
     val actionCallback = SimpleCallback()
-    dialogModule.showAlert(options, null, actionCallback)
+    dialogModule.showAlert(options, errorCallback, actionCallback)
     shadowOf(getMainLooper()).idle()
 
     getFragment().dialog?.dismiss()
     shadowOf(getMainLooper()).idle()
 
-    assertEquals(1, actionCallback.calls)
-    assertEquals(DialogModule.ACTION_DISMISSED, actionCallback.args?.get(0))
+    assertThat(errorCallback.calls).isEqualTo(0)
+    assertThat(actionCallback.calls).isEqualTo(1)
+    assertThat(actionCallback.args?.get(0)).isEqualTo(DialogModule.ACTION_DISMISSED)
   }
 
   @Test
@@ -152,15 +161,17 @@ class DialogModuleTest {
 
     val options = JavaOnlyMap()
 
+    val errorCallback = SimpleCallback()
     val actionCallback = SimpleCallback()
-    dialogModule.showAlert(options, null, actionCallback)
+    dialogModule.showAlert(options, errorCallback, actionCallback)
     shadowOf(getMainLooper()).idle()
 
     getFragment().dialog?.dismiss()
     shadowOf(getMainLooper()).idle()
 
-    assertEquals(1, actionCallback.calls)
-    assertEquals(DialogModule.ACTION_DISMISSED, actionCallback.args?.get(0))
+    assertThat(errorCallback.calls).isEqualTo(0)
+    assertThat(actionCallback.calls).isEqualTo(1)
+    assertThat(actionCallback.args?.get(0)).isEqualTo(DialogModule.ACTION_DISMISSED)
   }
 
   private fun setupActivity(theme: Int = APP_COMPAT_THEME) {
@@ -171,7 +182,7 @@ class DialogModuleTest {
     // raising an exception
     activity.setTheme(theme)
 
-    val context: ReactApplicationContext = mock(ReactApplicationContext::class.java)
+    val context: ReactApplicationContext = mock<ReactApplicationContext>()
     whenever(context.hasActiveReactInstance()).thenReturn(true)
     whenever(context.currentActivity).thenReturn(activity)
 

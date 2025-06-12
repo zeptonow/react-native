@@ -4,14 +4,13 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
-'use strict';
+import type {RNTesterModule, RNTesterModuleInfo} from '../types/RNTesterTypes';
 
-import type {RNTesterModuleInfo} from '../types/RNTesterTypes';
-
+import * as RNTesterListFbInternal from './RNTesterListFbInternal';
 import ReactNativeFeatureFlags from 'react-native/Libraries/ReactNative/ReactNativeFeatureFlags';
 
 const Components: Array<RNTesterModuleInfo> = [
@@ -46,6 +45,11 @@ const Components: Array<RNTesterModuleInfo> = [
   {
     key: 'KeyboardAvoidingViewExample',
     module: require('../examples/KeyboardAvoidingView/KeyboardAvoidingViewExample'),
+  },
+  {
+    key: 'LayoutConformanceExample',
+    module: require('../examples/LayoutConformance/LayoutConformanceExample')
+      .default,
   },
   {
     key: 'LayoutEventsExample',
@@ -141,6 +145,11 @@ const Components: Array<RNTesterModuleInfo> = [
     module: require('../examples/NewArchitecture/NewArchitectureExample'),
   },
   {
+    key: 'FabricInteropLayer',
+    category: 'UI',
+    module: require('../examples/FabricInteropLayer/FabricInteropLayer'),
+  },
+  {
     key: 'PerformanceComparisonExample',
     category: 'Basic',
     module: require('../examples/Performance/PerformanceComparisonExample'),
@@ -149,6 +158,7 @@ const Components: Array<RNTesterModuleInfo> = [
     key: 'OSSLibraryExample',
     module: require('../examples/OSSLibraryExample/OSSLibraryExample'),
   },
+  ...RNTesterListFbInternal.Components,
 ];
 
 const APIs: Array<RNTesterModuleInfo> = ([
@@ -188,6 +198,11 @@ const APIs: Array<RNTesterModuleInfo> = ([
     module: require('../examples/AppState/AppStateExample'),
   },
   {
+    key: 'URLExample',
+    category: 'Basic',
+    module: require('../examples/Urls/UrlExample'),
+  },
+  {
     key: 'BorderExample',
     module: require('../examples/Border/BorderExample').default,
   },
@@ -211,14 +226,12 @@ const APIs: Array<RNTesterModuleInfo> = ([
     key: 'Dimensions',
     module: require('../examples/Dimensions/DimensionsExample'),
   },
-  // Only show the link for the example if the API is available.
-  typeof IntersectionObserver === 'function'
-    ? {
-        key: 'IntersectionObserver',
-        category: 'UI',
-        module: require('../examples/IntersectionObserver/IntersectionObserverIndex'),
-      }
-    : null,
+  {
+    key: 'DisplayContentsExample',
+    category: 'UI',
+    module: require('../examples/DisplayContents/DisplayContentsExample')
+      .default,
+  },
   {
     key: 'InvalidPropsExample',
     module: require('../examples/InvalidProps/InvalidPropsExample'),
@@ -239,13 +252,6 @@ const APIs: Array<RNTesterModuleInfo> = ([
     key: 'LinkingExample',
     module: require('../examples/Linking/LinkingExample'),
   },
-  typeof MutationObserver === 'function'
-    ? {
-        key: 'MutationObserver',
-        category: 'UI',
-        module: require('../examples/MutationObserver/MutationObserverIndex'),
-      }
-    : null,
   {
     key: 'NativeAnimationsExample',
     module: require('../examples/NativeAnimation/NativeAnimationsExample'),
@@ -299,6 +305,20 @@ const APIs: Array<RNTesterModuleInfo> = ([
     module: require('../examples/Filter/FilterExample'),
   },
   {
+    key: 'LinearGradientExample',
+    category: 'UI',
+    module: require('../examples/LinearGradient/LinearGradientExample'),
+  },
+  {
+    key: 'RadialGradientExample',
+    category: 'UI',
+    module: require('../examples/RadialGradient/RadialGradientExample'),
+  },
+  {
+    key: 'MixBlendModeExample',
+    module: require('../examples/MixBlendMode/MixBlendModeExample'),
+  },
+  {
     key: 'TurboModuleExample',
     module: require('../examples/TurboModule/TurboModuleExample'),
   },
@@ -322,11 +342,7 @@ const APIs: Array<RNTesterModuleInfo> = ([
     key: 'XHRExample',
     module: require('../examples/XHR/XHRExample'),
   },
-  {
-    key: 'PerformanceApiExample',
-    category: 'Basic',
-    module: require('../examples/Performance/PerformanceApiExample'),
-  },
+  ...RNTesterListFbInternal.APIs,
 ]: Array<?RNTesterModuleInfo>).filter(Boolean);
 
 if (ReactNativeFeatureFlags.shouldEmitW3CPointerEvents()) {
@@ -337,10 +353,16 @@ if (ReactNativeFeatureFlags.shouldEmitW3CPointerEvents()) {
   });
 }
 
-const Modules: {...} = {};
+const Playgrounds: Array<RNTesterModuleInfo> = [
+  {
+    key: 'PlaygroundExample',
+    module: require('../examples/Playground/PlaygroundExample'),
+  },
+];
 
-APIs.concat(Components).forEach(Example => {
-  // $FlowFixMe[prop-missing]
+const Modules: {[key: string]: RNTesterModule} = {};
+
+[...APIs, ...Components, ...Playgrounds].forEach(Example => {
   Modules[Example.key] = Example.module;
 });
 

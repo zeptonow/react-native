@@ -4,20 +4,20 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
-const Text = require('../../../Text/Text');
-const TouchableOpacity = require('../TouchableOpacity');
+const {create} = require('../../../../jest/renderer');
+const Text = require('../../../Text/Text').default;
+const TouchableOpacity = require('../TouchableOpacity').default;
 const React = require('react');
-const ReactTestRenderer = require('react-test-renderer');
 
 describe('TouchableOpacity', () => {
-  it('renders correctly', () => {
-    const instance = ReactTestRenderer.create(
+  it('renders correctly', async () => {
+    const instance = await create(
       <TouchableOpacity>
         <Text>Touchable</Text>
       </TouchableOpacity>,
@@ -26,8 +26,8 @@ describe('TouchableOpacity', () => {
     expect(instance.toJSON()).toMatchSnapshot();
   });
 
-  it('renders in disabled state when a disabled prop is passed', () => {
-    const instance = ReactTestRenderer.create(
+  it('renders in disabled state when a disabled prop is passed', async () => {
+    const instance = await create(
       <TouchableOpacity disabled={true}>
         <Text>Touchable</Text>
       </TouchableOpacity>,
@@ -36,8 +36,8 @@ describe('TouchableOpacity', () => {
     expect(instance.toJSON()).toMatchSnapshot();
   });
 
-  it('renders in disabled state when a key disabled in accessibilityState is passed', () => {
-    const instance = ReactTestRenderer.create(
+  it('renders in disabled state when a key disabled in accessibilityState is passed', async () => {
+    const instance = await create(
       <TouchableOpacity accessibilityState={{disabled: true}}>
         <Text>Touchable</Text>
       </TouchableOpacity>,

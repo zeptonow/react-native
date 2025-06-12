@@ -11,6 +11,7 @@
 #include <jsi/JSIDynamic.h>
 #include <jsi/jsi.h>
 #include <react/debug/react_native_assert.h>
+#include <react/renderer/bridging/bridging.h>
 #include <react/renderer/core/ShadowNode.h>
 
 namespace facebook::react {
@@ -30,26 +31,19 @@ struct ShadowNodeListWrapper : public jsi::NativeState {
   ShadowNode::UnsharedListOfShared shadowNodeList;
 };
 
-inline static ShadowNode::Shared shadowNodeFromValue(
-    jsi::Runtime& runtime,
-    const jsi::Value& value) {
-  if (value.isNull()) {
-    return nullptr;
-  }
-
-  return value.getObject(runtime)
-      .getNativeState<ShadowNodeWrapper>(runtime)
-      ->shadowNode;
-}
-
 inline static jsi::Value valueFromShadowNode(
     jsi::Runtime& runtime,
-    ShadowNode::Shared shadowNode) {
+    ShadowNode::Shared shadowNode,
+    bool assignRuntimeShadowNodeReference = false) {
   // Wrap the shadow node so that we can update JS references from native
   auto wrappedShadowNode =
       std::make_shared<ShadowNodeWrapper>(std::move(shadowNode));
-  wrappedShadowNode->shadowNode->setRuntimeShadowNodeReference(
-      &*wrappedShadowNode);
+
+  if (assignRuntimeShadowNodeReference) {
+    wrappedShadowNode->shadowNode->setRuntimeShadowNodeReference(
+        wrappedShadowNode);
+  }
+
   jsi::Object obj(runtime);
   obj.setNativeState(runtime, std::move(wrappedShadowNode));
   return obj;
@@ -70,8 +64,8 @@ inline static ShadowNode::UnsharedListOfShared shadowNodeListFromValue(
       shadowNodeArray->reserve(jsArrayLen);
 
       for (size_t i = 0; i < jsArrayLen; i++) {
-        shadowNodeArray->push_back(
-            shadowNodeFromValue(runtime, jsArray.getValueAtIndex(runtime, i)));
+        shadowNodeArray->push_back(Bridging<ShadowNode::Shared>::fromJs(
+            runtime, jsArray.getValueAtIndex(runtime, i)));
       }
       return shadowNodeArray;
     } else {
@@ -154,6 +148,9 @@ inline static int displayModeToInt(const DisplayMode value) {
       return 2;
     case DisplayMode::Hidden:
       return 3;
+    default:
+      react_native_assert(0 && "displayModeToInt: Invalid DisplayMode");
+      return -1;
   }
 }
 

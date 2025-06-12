@@ -6,10 +6,11 @@
  *
  * @flow
  * @format
- * @oncall react_native
  */
 
-const {PACKAGES_DIR} = require('../consts');
+require('../babel-register').registerForScript();
+
+const {PACKAGES_DIR, REPO_ROOT} = require('../consts');
 const {
   buildConfig,
   getBabelConfig,
@@ -17,15 +18,14 @@ const {
   getTypeScriptCompilerOptions,
 } = require('./config');
 const babel = require('@babel/core');
-const {parseArgs} = require('@pkgjs/parseargs');
-const chalk = require('chalk');
 const translate = require('flow-api-translator');
-const {accessSync, constants, promises: fs, readFileSync} = require('fs');
+const {promises: fs} = require('fs');
 const glob = require('glob');
 const micromatch = require('micromatch');
 const path = require('path');
 const prettier = require('prettier');
 const ts = require('typescript');
+const {parseArgs, styleText} = require('util');
 
 const SRC_DIR = 'src';
 const BUILD_DIR = 'dist';
@@ -35,6 +35,7 @@ const IGNORE_PATTERN = '**/__{tests,mocks,fixtures}__/**';
 const config = {
   allowPositionals: true,
   options: {
+    validate: {type: 'boolean'},
     help: {type: 'boolean'},
   },
 };
@@ -42,7 +43,9 @@ const config = {
 async function build() {
   const {
     positionals: packageNames,
-    values: {help},
+    values: {validate, help},
+    /* $FlowFixMe[incompatible-call] Natural Inference rollout. See
+     * https://fburl.com/workplace/6291gfvu */
   } = parseArgs(config);
 
   if (help) {
@@ -53,80 +56,115 @@ async function build() {
 
   By default, builds all packages defined in ./scripts/build/config.js. If a
   a package list is provided, builds only those specified.
+
+  Options:
+    --validate        Validate that no build artifacts have been accidentally
+                      committed.
     `);
     process.exitCode = 0;
     return;
   }
 
-  console.log('\n' + chalk.bold.inverse('Building packages') + '\n');
+  if (!validate) {
+    console.log(
+      '\n' + styleText(['bold', 'inverse'], 'Building packages') + '\n',
+    );
+  }
 
   const packagesToBuild = packageNames.length
     ? packageNames.filter(packageName => packageName in buildConfig.packages)
     : Object.keys(buildConfig.packages);
 
+  let ok = true;
   for (const packageName of packagesToBuild) {
-    await buildPackage(packageName);
+    if (validate) {
+      ok &&= await checkPackage(packageName);
+    } else {
+      await buildPackage(packageName);
+    }
   }
 
-  process.exitCode = 0;
+  process.exitCode = ok ? 0 : 1;
 }
 
-function invert(map /*: Map<string, string>*/) /*: Map<string, string> */ {
-  const result /*: Map<string, string>*/ = new Map();
-  for (const [key, value] of map.entries()) {
-    result.set(value, key);
+async function checkPackage(packageName /*: string */) /*: Promise<boolean> */ {
+  const artifacts = await exportedBuildArtifacts(packageName);
+  if (artifacts.length > 0) {
+    console.log(
+      `${styleText('bgRed', packageName)}: has been built and the ${styleText('bold', 'build artifacts')} committed to the repository. This will break Flow checks.`,
+    );
+    return false;
   }
-  return result;
+  return true;
 }
 
 async function buildPackage(packageName /*: string */) {
-  const {emitTypeScriptDefs} = getBuildOptions(packageName);
-  const entryPointRewrites = getEntryPoints(packageName);
+  try {
+    const {emitTypeScriptDefs} = getBuildOptions(packageName);
+    const entryPoints = await getEntryPoints(packageName);
 
-  const files = glob
-    .sync(path.resolve(PACKAGES_DIR, packageName, SRC_DIR, '**/*'), {
-      nodir: true,
-    })
-    .filter(file => !entryPointRewrites.has(file));
+    const files = glob
+      .sync(path.resolve(PACKAGES_DIR, packageName, SRC_DIR, '**/*'), {
+        nodir: true,
+      })
+      .filter(
+        file =>
+          !entryPoints.has(file) &&
+          !entryPoints.has(file.replace(/\.js$/, '.flow.js')),
+      );
 
-  process.stdout.write(
-    `${packageName} ${chalk.dim('.').repeat(72 - packageName.length)} `,
-  );
+    process.stdout.write(
+      `${packageName} ${styleText('dim', '.').repeat(72 - packageName.length)} `,
+    );
 
-  const invertedEntryPointRewrites = invert(entryPointRewrites);
+    // Build regular files
+    for (const file of files) {
+      await buildFile(path.normalize(file), {
+        silent: true,
+      });
+    }
 
-  // Build all files matched for package
-  for (const file of files) {
-    await buildFile(path.normalize(file), {
-      silent: true,
-      destPath: invertedEntryPointRewrites.get(file),
-    });
+    // Build entry point files
+    for (const entryPoint of entryPoints) {
+      await buildFile(path.normalize(entryPoint), {
+        silent: true,
+      });
+    }
+
+    // Validate program for emitted .d.ts files
+    if (emitTypeScriptDefs) {
+      validateTypeScriptDefs(packageName);
+    }
+
+    // Rewrite package.json "exports" field (src -> dist)
+    await rewritePackageExports(packageName);
+
+    process.stdout.write(
+      styleText(['reset', 'inverse', 'bold', 'green'], ' DONE '),
+    );
+  } catch (e) {
+    process.stdout.write(
+      styleText(['reset', 'inverse', 'bold', 'red'], ' FAIL ') + '\n',
+    );
+    throw e;
+  } finally {
+    process.stdout.write('\n');
   }
-
-  // Validate program for emitted .d.ts files
-  if (emitTypeScriptDefs) {
-    validateTypeScriptDefs(packageName);
-  }
-
-  // Rewrite package.json "exports" field (src -> dist)
-  await rewritePackageExports(packageName);
-
-  process.stdout.write(chalk.reset.inverse.bold.green(' DONE ') + '\n');
 }
 
 async function buildFile(
   file /*: string */,
   options /*: {silent?: boolean, destPath?: string}*/ = {},
 ) {
-  const {silent, destPath} = {silent: false, ...options};
+  const {silent = false} = options;
   const packageName = getPackageName(file);
-  const buildPath = getBuildPath(destPath ?? file);
+  const buildPath = getBuildPath(file);
   const {emitFlowDefs, emitTypeScriptDefs} = getBuildOptions(packageName);
 
   const logResult = ({copied, desc} /*: {copied: boolean, desc?: string} */) =>
     silent ||
     console.log(
-      chalk.dim('  - ') +
+      styleText('dim', '  - ') +
         path.relative(PACKAGES_DIR, file) +
         (copied ? ' -> ' + path.relative(PACKAGES_DIR, buildPath) : ' ') +
         (desc != null ? ' (' + desc + ')' : ''),
@@ -151,26 +189,33 @@ async function buildFile(
   // Transform source file using Babel
   const transformed = prettier.format(
     (await babel.transformFileAsync(file, getBabelConfig(packageName))).code,
+    /* $FlowFixMe[incompatible-call] Natural Inference rollout. See
+     * https://fburl.com/workplace/6291gfvu */
     prettierConfig,
   );
   await fs.writeFile(buildPath, transformed);
 
   // Translate source Flow types for each type definition target
   if (/@flow/.test(source)) {
-    await Promise.all([
-      emitFlowDefs
-        ? fs.writeFile(
-            buildPath + '.flow',
-            await translate.translateFlowToFlowDef(source, prettierConfig),
-          )
-        : null,
-      emitTypeScriptDefs
-        ? fs.writeFile(
-            buildPath.replace(/\.js$/, '') + '.d.ts',
-            await translate.translateFlowToTSDef(source, prettierConfig),
-          )
-        : null,
-    ]);
+    try {
+      await Promise.all([
+        emitFlowDefs
+          ? fs.writeFile(
+              buildPath + '.flow',
+              await translate.translateFlowToFlowDef(source, prettierConfig),
+            )
+          : null,
+        emitTypeScriptDefs
+          ? fs.writeFile(
+              buildPath.replace(/\.js$/, '') + '.d.ts',
+              await translate.translateFlowToTSDef(source, prettierConfig),
+            )
+          : null,
+      ]);
+    } catch (e) {
+      e.message = `Error translating ${path.relative(PACKAGES_DIR, file)}:\n${e.message}`;
+      throw e;
+    }
   }
 
   logResult({copied: true});
@@ -179,76 +224,148 @@ async function buildFile(
 /*::
 type PackageJson = {
   name: string,
-  exports?: {[lookup: string]: string},
-}
+  exports?: {[subpath: string]: string | mixed},
+};
 */
 
-// As a convention, we use a .js/.js.flow file pair for each package
-// entry point, with the .js file being a Babel wrapper that can be
-// used directly in the monorepo. On build, we drop this wrapper and
-// emit a single file from the .js.flow contents.
-// can be used directly within the repo. When built, this needs to be rewritten
-// and the wrapper dropped:
-//
-// index.js ──────►{remove wrapper}
-//              ┌─►index.js
-// index.flow.js├─►index.d.ts
-//              └─►index.flow.js
-function getEntryPoints(packageName /*: string*/) /*: Map<string, string> */ {
+function isStringOnly(entries /*: mixed */) /*: entries is string */ {
+  return typeof entries === 'string';
+}
+
+async function exportedBuildArtifacts(
+  packageName /*: string */,
+) /*: Promise<string[]> */ {
+  const packagePath = path.resolve(PACKAGES_DIR, packageName, 'package.json');
   const pkg /*: PackageJson */ = JSON.parse(
-    readFileSync(
-      path.resolve(PACKAGES_DIR, packageName, 'package.json'),
-      'utf8',
-    ),
+    await fs.readFile(packagePath, 'utf8'),
   );
-
-  // Flow files we want transpiled in place of the wrapper js files
-  const pathMap /*: Map<string, string>*/ = new Map();
-
-  for (const packagePath in pkg.exports) {
-    const original = revertRewriteExportsTarget(pkg.exports[packagePath]);
-
-    // Exported json files shouldn't be considered
-    if (!original.endsWith('.js')) {
-      continue;
-    }
-
-    if (original.endsWith('.flow.js')) {
-      throw new Error(
-        `${chalk.bold(packageName)} has ${chalk.bold(
-          'exports.' + packagePath + ' = "' + original + '"',
-        )}. Expecting a .js wrapper file. See other monorepo packages for examples.`,
-      );
-    }
-
-    // Our special case for wrapper files that need to be stripped
-    const entryPoint = path.resolve(PACKAGES_DIR, packageName, original);
-
-    const {dir, name} = path.parse(entryPoint);
-    const entryPointFlow = path.join(dir, name + '.flow.js');
-
-    try {
-      accessSync(entryPointFlow, constants.F_OK);
-    } catch {
-      throw new Error(
-        `${chalk.bold(
-          entryPointFlow,
-        )} does not exist when building ${chalk.bold(packageName)}.
-
-The ${chalk.bold("package.json's")} ${chalk.bold(
-          'exports["' + packagePath + '"]',
-        )}:
-  - found:   ${chalk.bold.green(entryPoint)}
-  - missing: ${chalk.bold.red(entryPointFlow)}
-
-This is needed so users can directly import the file from the monorepo using Node.`,
-      );
-    }
-
-    pathMap.set(entryPoint, entryPointFlow);
+  if (pkg.exports == null) {
+    throw new Error(
+      packageName +
+        ' does not define an "exports" field in its package.json. As part ' +
+        'of the build setup, this field must be used in order to rewrite ' +
+        'paths to built files in production.',
+    );
   }
 
-  return pathMap;
+  return Object.values(pkg.exports)
+    .filter(isStringOnly)
+    .filter(filepath =>
+      path.dirname(filepath).split(path.sep).includes(BUILD_DIR),
+    );
+}
+
+/**
+ * Get the set of Flow entry points to build.
+ *
+ * As a convention, we use a .js/.flow.js file pair for each package entry
+ * point, with the .js file being a Babel wrapper that can be used directly in
+ * the monorepo. On build, we drop this wrapper and emit a single file from the
+ * .flow.js contents.
+ *
+ * index.js ──────►(removed)
+ *              ┌─►index.js
+ * index.flow.js├─►index.d.ts
+ *              └─►index.js.flow
+ */
+async function getEntryPoints(
+  packageName /*: string */,
+) /*: Promise<Set<string>> */ {
+  const packagePath = path.resolve(PACKAGES_DIR, packageName, 'package.json');
+  const pkg /*: PackageJson */ = JSON.parse(
+    await fs.readFile(packagePath, 'utf8'),
+  );
+  const entryPoints /*: Set<string> */ = new Set();
+
+  if (pkg.exports == null) {
+    throw new Error(
+      packageName +
+        ' does not define an "exports" field in its package.json. As part ' +
+        'of the build setup, this field must be used in order to rewrite ' +
+        'paths to built files in production.',
+    );
+  }
+
+  const exportsEntries = Object.entries(pkg.exports);
+
+  for (const [subpath, targetOrConditionsObject] of exportsEntries) {
+    const targets /*: string[] */ = [];
+    if (
+      typeof targetOrConditionsObject === 'object' &&
+      targetOrConditionsObject != null
+    ) {
+      for (const [condition, target] of Object.entries(
+        targetOrConditionsObject,
+      )) {
+        if (typeof target !== 'string') {
+          throw new Error(
+            `Invalid exports field in package.json for ${packageName}. ` +
+              `exports["${subpath}"]["${condition}"] must be a string target.`,
+          );
+        }
+        targets.push(target);
+      }
+    } else {
+      if (typeof targetOrConditionsObject !== 'string') {
+        throw new Error(
+          `Invalid exports field in package.json for ${packageName}. ` +
+            `exports["${subpath}"] must be a string target.`,
+        );
+      }
+      targets.push(targetOrConditionsObject);
+    }
+
+    for (const target of targets) {
+      // Skip non-JS files
+      if (!target.endsWith('.js')) {
+        continue;
+      }
+
+      if (target.includes('*')) {
+        console.warn(
+          `${styleText('yellow', 'Warning')}: Encountered subpath pattern ${subpath}` +
+            ` in package.json exports for ${packageName}. Matched entry points ` +
+            'will not be validated.',
+        );
+        continue;
+      }
+
+      // Normalize to original path if previously rewritten
+      const original = normalizeExportsTarget(target);
+
+      if (original.endsWith('.flow.js')) {
+        throw new Error(
+          `Package ${packageName} defines exports["${subpath}"] = "${original}". ` +
+            'Expecting a .js wrapper file. See other monorepo packages for examples.',
+        );
+      }
+
+      // Our special case for wrapper files that need to be stripped
+      const resolvedTarget = path.resolve(PACKAGES_DIR, packageName, original);
+      const resolvedFlowTarget = resolvedTarget.replace(/\.js$/, '.flow.js');
+
+      try {
+        await Promise.all([
+          fs.access(resolvedTarget),
+          fs.access(resolvedFlowTarget),
+        ]);
+      } catch {
+        throw new Error(
+          `${resolvedFlowTarget} does not exist when building ${packageName}.
+
+From package.json exports["${subpath}"]:
+  - found:   ${path.relative(REPO_ROOT, resolvedTarget)}
+  - missing: ${path.relative(REPO_ROOT, resolvedFlowTarget)}
+
+This is needed so users can directly import this entry point from the monorepo.`,
+        );
+      }
+
+      entryPoints.add(resolvedFlowTarget);
+    }
+  }
+
+  return entryPoints;
 }
 
 function getPackageName(file /*: string */) /*: string */ {
@@ -260,7 +377,9 @@ function getBuildPath(file /*: string */) /*: string */ {
 
   return path.join(
     packageDir,
-    file.replace(path.join(packageDir, SRC_DIR), BUILD_DIR),
+    file
+      .replace(path.join(packageDir, SRC_DIR), BUILD_DIR)
+      .replace('.flow.js', '.js'),
   );
 }
 
@@ -268,14 +387,6 @@ async function rewritePackageExports(packageName /*: string */) {
   const packageJsonPath = path.join(PACKAGES_DIR, packageName, 'package.json');
   const pkg = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
 
-  if (pkg.exports == null) {
-    throw new Error(
-      packageName +
-        ' does not define an "exports" field in its package.json. As part ' +
-        'of the build setup, this field must be used in order to rewrite ' +
-        'paths to built files in production.',
-    );
-  }
   pkg.exports = rewriteExportsField(pkg.exports);
 
   if (pkg.main != null) {
@@ -313,7 +424,7 @@ function rewriteExportsTarget(target /*: string */) /*: string */ {
   return target.replace('./' + SRC_DIR + '/', './' + BUILD_DIR + '/');
 }
 
-function revertRewriteExportsTarget(target /*: string */) /*: string */ {
+function normalizeExportsTarget(target /*: string */) /*: string */ {
   return target.replace('./' + BUILD_DIR + '/', './' + SRC_DIR + '/');
 }
 
@@ -326,7 +437,13 @@ function validateTypeScriptDefs(packageName /*: string */) {
     noEmit: true,
     skipLibCheck: false,
   };
-  const program = ts.createProgram(files, compilerOptions);
+  const program = ts.createProgram(
+    files,
+    ts.convertCompilerOptionsFromJson(
+      compilerOptions,
+      path.resolve(PACKAGES_DIR, packageName),
+    ),
+  );
   const emitResult = program.emit();
 
   if (emitResult.diagnostics.length) {
@@ -369,6 +486,12 @@ module.exports = {
 };
 
 if (require.main === module) {
-  // eslint-disable-next-line no-void
-  void build();
+  build().catch(error => {
+    if (error.name === 'ExpectedTranslationError') {
+      console.error(error.message);
+    } else {
+      console.error(error.stack);
+    }
+    process.exitCode = 1;
+  });
 }

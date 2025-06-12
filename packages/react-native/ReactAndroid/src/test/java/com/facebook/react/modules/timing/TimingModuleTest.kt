@@ -5,6 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// TODO T207169925: Migrate CatalystInstance to Reacthost and remove the Suppress("DEPRECATION")
+// annotation
+@file:Suppress("DEPRECATION")
+
 package com.facebook.react.modules.timing
 
 import android.content.Context
@@ -30,22 +34,34 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.eq
+import org.mockito.ArgumentMatchers
 import org.mockito.MockedStatic
-import org.mockito.Mockito.doAnswer
-import org.mockito.Mockito.doReturn
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
-import org.mockito.Mockito.reset
-import org.mockito.Mockito.spy
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoMoreInteractions
-import org.mockito.Mockito.`when` as whenever
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+
+public object MockCompat {
+  // Same as Mockito's 'eq()', but works for non-nullable types
+  public fun <T : Any> eq(value: T): T = ArgumentMatchers.eq(value) ?: value
+
+  // Same as Mockito's 'any()', but works for non-nullable types
+  fun <T> any(): T {
+    ArgumentMatchers.any<T>()
+    return uninitialized()
+  }
+
+  @Suppress("UNCHECKED_CAST") fun <T> uninitialized(): T = null as T
+}
 
 @RunWith(RobolectricTestRunner::class)
 class TimingModuleTest {
@@ -56,14 +72,15 @@ class TimingModuleTest {
   private lateinit var reactContext: BridgeReactContext
   private lateinit var headlessContext: HeadlessJsTaskContext
   private lateinit var timingModule: TimingModule
-  private lateinit var reactChoreographerMock: ReactChoreographer
   private lateinit var postFrameCallbackHandler: PostFrameCallbackHandler
   private lateinit var idlePostFrameCallbackHandler: PostFrameCallbackHandler
-  private var currentTimeNs = 0L
   private lateinit var jsTimersMock: JSTimers
   private lateinit var arguments: MockedStatic<Arguments>
   private lateinit var systemClock: MockedStatic<SystemClock>
-  private lateinit var reactChoreographer: MockedStatic<ReactChoreographer>
+  private lateinit var reactChoreographerMock: ReactChoreographer
+
+  private var currentTimeNs = 0L
+  private var reactChoreographerOriginal: ReactChoreographer? = null
 
   @Before
   fun prepareModules() {
@@ -87,14 +104,11 @@ class TimingModuleTest {
           return@thenAnswer currentTimeNs
         }
 
-    reactChoreographerMock = mock(ReactChoreographer::class.java)
-    reactChoreographer = mockStatic(ReactChoreographer::class.java)
-    reactChoreographer
-        .`when`<ReactChoreographer> { ReactChoreographer.getInstance() }
-        .thenAnswer { reactChoreographerMock }
+    reactChoreographerMock = mock<ReactChoreographer>()
+    reactChoreographerOriginal = ReactChoreographer.overrideInstanceForTest(reactChoreographerMock)
 
-    val reactInstance = mock(CatalystInstance::class.java)
-    reactContext = spy(BridgeReactContext(mock(Context::class.java)))
+    val reactInstance = mock<CatalystInstance>()
+    reactContext = spy(BridgeReactContext(mock<Context>()))
     doReturn(reactInstance).`when`(reactContext).catalystInstance
     doReturn(true).`when`(reactContext).hasActiveReactInstance()
 
@@ -105,29 +119,27 @@ class TimingModuleTest {
 
     whenever(
             reactChoreographerMock.postFrameCallback(
-                eq(CallbackType.TIMERS_EVENTS), any(FrameCallback::class.java)))
+                MockCompat.eq(CallbackType.TIMERS_EVENTS), MockCompat.any<FrameCallback>()))
         .thenAnswer {
           return@thenAnswer postFrameCallbackHandler.answer(it)
         }
     whenever(
             reactChoreographerMock.postFrameCallback(
-                eq(CallbackType.IDLE_EVENT), any(FrameCallback::class.java)))
+                MockCompat.eq(CallbackType.IDLE_EVENT), MockCompat.any<FrameCallback>()))
         .thenAnswer {
           return@thenAnswer idlePostFrameCallbackHandler.answer(it)
         }
 
-    timingModule = TimingModule(reactContext, mock(DevSupportManager::class.java))
-    jsTimersMock = mock(JSTimers::class.java)
+    timingModule = TimingModule(reactContext, mock<DevSupportManager>())
+    jsTimersMock = mock<JSTimers>()
     doReturn(jsTimersMock).`when`(reactContext).getJSModule(JSTimers::class.java)
-    doReturn(mock(AppRegistry::class.java))
-        .`when`(reactContext)
-        .getJSModule(AppRegistry::class.java)
+    doReturn(mock<AppRegistry>()).`when`(reactContext).getJSModule(AppRegistry::class.java)
     doAnswer({ invocation ->
           (invocation.arguments[0] as Runnable).run()
           return@doAnswer true
         })
         .`when`(reactContext)
-        .runOnJSQueueThread(any(Runnable::class.java))
+        .runOnJSQueueThread(MockCompat.any<Runnable>())
 
     timingModule.initialize()
   }
@@ -136,7 +148,7 @@ class TimingModuleTest {
   fun tearDown() {
     systemClock.close()
     arguments.close()
-    reactChoreographer.close()
+    ReactChoreographer.overrideInstanceForTest(reactChoreographerOriginal)
   }
 
   private fun stepChoreographerFrame() {

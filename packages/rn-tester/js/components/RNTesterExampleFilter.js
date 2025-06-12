@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 import type {SectionData} from '../types/RNTesterTypes';
@@ -100,7 +100,7 @@ class RNTesterExampleFilter<T> extends React.Component<Props<T>, State> {
     }
   }
 
-  _renderTextInput(): ?React.Element<any> {
+  _renderTextInput(): ?React.MixedElement {
     if (this.props.disableSearch) {
       return null;
     }

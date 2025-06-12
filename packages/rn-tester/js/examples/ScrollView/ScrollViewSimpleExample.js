@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 'use strict';
@@ -137,7 +137,7 @@ exports.description =
 exports.examples = [
   {
     title: 'Simple scroll view',
-    render: function (): React.Element<typeof ScrollViewSimpleExample> {
+    render(): React.MixedElement {
       return <ScrollViewSimpleExample />;
     },
   },

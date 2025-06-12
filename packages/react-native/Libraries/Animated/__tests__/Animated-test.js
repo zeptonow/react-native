@@ -4,30 +4,42 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import * as React from 'react';
 
+const {create, unmount, update} = require('../../../jest/renderer');
 const {PlatformColor} = require('../../StyleSheet/PlatformColorValueTypes');
 let Animated = require('../Animated').default;
 const AnimatedProps = require('../nodes/AnimatedProps').default;
 const TestRenderer = require('react-test-renderer');
 
-jest.mock('../../BatchedBridge/NativeModules', () => ({
-  NativeAnimatedModule: {},
-  PlatformConstants: {
-    getConstants() {
-      return {};
-    },
-  },
-}));
+// WORKAROUND: `jest.runAllTicks` skips tasks scheduled w/ `queueMicrotask`.
+function mockQueueMicrotask() {
+  let queueMicrotask;
+  beforeEach(() => {
+    queueMicrotask = global.queueMicrotask;
+    // $FlowIgnore[cannot-write]
+    global.queueMicrotask = process.nextTick;
+  });
+  afterEach(() => {
+    // $FlowIgnore[cannot-write]
+    global.queueMicrotask = queueMicrotask;
+  });
+}
 
-describe('Animated tests', () => {
+describe('Animated', () => {
+  let ReactNativeFeatureFlags;
+
   beforeEach(() => {
     jest.resetModules();
+
+    ReactNativeFeatureFlags = require('../../../src/private/featureflags/ReactNativeFeatureFlags');
   });
+
+  mockQueueMicrotask();
 
   describe('Animated', () => {
     it('works end to end', () => {
@@ -101,25 +113,33 @@ describe('Animated tests', () => {
       expect(callback.mock.calls.length).toBe(1);
     });
 
-    it('does not detach on updates', () => {
+    it('does not detach on updates', async () => {
+      ReactNativeFeatureFlags.override({
+        scheduleAnimatedCleanupInMicrotask: () => false,
+      });
+
       const opacity = new Animated.Value(0);
-      opacity.__detach = jest.fn();
+      jest.spyOn(opacity, '__detach');
 
-      const root = TestRenderer.create(<Animated.View style={{opacity}} />);
+      const root = await create(<Animated.View style={{opacity}} />);
       expect(opacity.__detach).not.toBeCalled();
 
-      root.update(<Animated.View style={{opacity}} />);
+      await update(root, <Animated.View style={{opacity}} />);
       expect(opacity.__detach).not.toBeCalled();
 
-      root.unmount();
+      await unmount(root);
       expect(opacity.__detach).toBeCalled();
     });
 
-    it('stops animation when detached', () => {
+    it('stops animation when detached', async () => {
+      ReactNativeFeatureFlags.override({
+        scheduleAnimatedCleanupInMicrotask: () => false,
+      });
+
       const opacity = new Animated.Value(0);
       const callback = jest.fn();
 
-      const root = TestRenderer.create(<Animated.View style={{opacity}} />);
+      const root = await create(<Animated.View style={{opacity}} />);
 
       Animated.timing(opacity, {
         toValue: 10,
@@ -127,8 +147,91 @@ describe('Animated tests', () => {
         useNativeDriver: false,
       }).start(callback);
 
-      root.unmount();
+      await unmount(root);
 
+      expect(callback).toBeCalledWith({finished: false});
+    });
+
+    it('detaches only on unmount (in a microtask)', async () => {
+      ReactNativeFeatureFlags.override({
+        scheduleAnimatedCleanupInMicrotask: () => true,
+      });
+
+      const opacity = new Animated.Value(0);
+      jest.spyOn(opacity, '__detach');
+
+      const root = await create(<Animated.View style={{opacity}} />);
+      expect(opacity.__detach).not.toBeCalled();
+
+      await update(root, <Animated.View style={{opacity}} />);
+      expect(opacity.__detach).not.toBeCalled();
+      jest.runAllTicks();
+      expect(opacity.__detach).not.toBeCalled();
+
+      await unmount(root);
+      expect(opacity.__detach).not.toBeCalled();
+      jest.runAllTicks();
+      expect(opacity.__detach).toBeCalled();
+    });
+
+    it('restores default values only on update (in a microtask)', async () => {
+      ReactNativeFeatureFlags.override({
+        scheduleAnimatedCleanupInMicrotask: () => true,
+      });
+
+      const __restoreDefaultValues = jest.spyOn(
+        AnimatedProps.prototype,
+        '__restoreDefaultValues',
+      );
+
+      try {
+        const opacityA = new Animated.Value(0);
+        const root = await create(
+          <Animated.View style={{opacity: opacityA}} />,
+        );
+        expect(__restoreDefaultValues).not.toBeCalled();
+
+        const opacityB = new Animated.Value(0);
+        await update(root, <Animated.View style={{opacity: opacityB}} />);
+        expect(__restoreDefaultValues).not.toBeCalled();
+        jest.runAllTicks();
+        expect(__restoreDefaultValues).toBeCalledTimes(1);
+
+        const opacityC = new Animated.Value(0);
+        await update(root, <Animated.View style={{opacity: opacityC}} />);
+        expect(__restoreDefaultValues).toBeCalledTimes(1);
+        jest.runAllTicks();
+        expect(__restoreDefaultValues).toBeCalledTimes(2);
+
+        await unmount(root);
+        expect(__restoreDefaultValues).toBeCalledTimes(2);
+        jest.runAllTicks();
+        expect(__restoreDefaultValues).toBeCalledTimes(2);
+      } finally {
+        __restoreDefaultValues.mockRestore();
+      }
+    });
+
+    it('stops animation when detached (in a microtask)', async () => {
+      ReactNativeFeatureFlags.override({
+        scheduleAnimatedCleanupInMicrotask: () => true,
+      });
+
+      const opacity = new Animated.Value(0);
+      const callback = jest.fn();
+
+      const root = await create(<Animated.View style={{opacity}} />);
+
+      Animated.timing(opacity, {
+        toValue: 10,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start(callback);
+
+      await unmount(root);
+
+      expect(callback).not.toBeCalled();
+      jest.runAllTicks();
       expect(callback).toBeCalledWith({finished: false});
     });
 
@@ -141,6 +244,27 @@ describe('Animated tests', () => {
         useNativeDriver: false,
       }).start(callback);
       expect(callback).toBeCalled();
+    });
+
+    it('renders animated and primitive style correctly', () => {
+      ReactNativeFeatureFlags.override({
+        alwaysFlattenAnimatedStyles: () => true,
+      });
+
+      const anim = new Animated.Value(0);
+      const staticProps = {
+        style: [
+          {transform: [{translateX: anim}]},
+          {transform: [{translateX: 100}]},
+        ],
+      };
+      const staticPropsWithoutAnim = {
+        style: {transform: [{translateX: 100}]},
+      };
+      const node = new AnimatedProps(staticProps, jest.fn());
+      expect(node.__getValueWithStaticProps(staticProps)).toStrictEqual(
+        staticPropsWithoutAnim,
+      );
     });
 
     it('send toValue when a critically damped spring stops', () => {
@@ -165,14 +289,12 @@ describe('Animated tests', () => {
       expect(JSON.stringify(new Animated.Value(10))).toBe('10');
     });
 
-    it('bypasses `setNativeProps` in test environments', () => {
+    it('bypasses `setNativeProps` in test environments', async () => {
       const opacity = new Animated.Value(0);
 
-      const testRenderer = TestRenderer.create(
-        <Animated.View style={{opacity}} />,
-      );
+      const testRenderer = await create(<Animated.View style={{opacity}} />);
 
-      expect(testRenderer.toJSON().props.style.opacity).toEqual(0);
+      expect(testRenderer.toJSON()?.props.style.opacity).toEqual(0);
 
       TestRenderer.act(() => {
         Animated.timing(opacity, {
@@ -182,12 +304,13 @@ describe('Animated tests', () => {
         }).start();
       });
 
-      expect(testRenderer.toJSON().props.style.opacity).toEqual(1);
+      expect(testRenderer.toJSON()?.props.style.opacity).toEqual(1);
     });
 
     it('warns if `useNativeDriver` is missing', () => {
       jest.spyOn(console, 'warn').mockImplementationOnce(() => {});
 
+      // $FlowExpectedError[prop-missing]
       Animated.spring(new Animated.Value(0), {
         toValue: 0,
         velocity: 0,
@@ -197,7 +320,47 @@ describe('Animated tests', () => {
       expect(console.warn).toBeCalledWith(
         'Animated: `useNativeDriver` was not specified. This is a required option and must be explicitly set to `true` or `false`',
       );
+      // $FlowIssue[prop-missing]
       console.warn.mockRestore();
+    });
+
+    it('throws if `useNativeDriver` is incompatible with AnimatedValue', () => {
+      const value = new Animated.Value(0);
+      value.__makeNative();
+
+      const animation = Animated.spring(value, {
+        toValue: 0,
+        velocity: 0,
+        useNativeDriver: false,
+      });
+
+      expect(() => {
+        animation.start();
+      }).toThrow(
+        'Attempting to run JS driven animation on animated node that has ' +
+          'been moved to "native" earlier by starting an animation with ' +
+          '`useNativeDriver: true`',
+      );
+    });
+
+    it('synchronously throws on `useNativeDriver` incompatibility', () => {
+      const value = new Animated.Value(0);
+      value.__makeNative();
+
+      const animation = Animated.spring(value, {
+        delay: 100, // Even with a non-zero delay, error throws synchronously.
+        toValue: 0,
+        velocity: 0,
+        useNativeDriver: false,
+      });
+
+      expect(() => {
+        animation.start();
+      }).toThrow(
+        'Attempting to run JS driven animation on animated node that has ' +
+          'been moved to "native" earlier by starting an animation with ' +
+          '`useNativeDriver: true`',
+      );
     });
   });
 
@@ -213,6 +376,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.sequence([anim1, anim2]);
 
       expect(anim1.start).not.toBeCalled();
@@ -238,6 +402,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       Animated.sequence([anim1, anim2]).start(cb);
 
       anim1.start.mock.calls[0][0]({finished: false});
@@ -252,6 +417,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.sequence([anim1, anim2]);
       seq.start(cb);
       seq.stop();
@@ -270,6 +436,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.sequence([anim1, anim2]);
 
       seq.start(cb);
@@ -293,6 +460,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.sequence([anim1, anim2]);
 
       seq.start(cb);
@@ -319,6 +487,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation);
 
       expect(animation.start).not.toBeCalled();
@@ -350,6 +519,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation, {iterations: -1});
 
       expect(animation.start).not.toBeCalled();
@@ -381,6 +551,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation, {anotherKey: 'value'});
 
       expect(animation.start).not.toBeCalled();
@@ -412,6 +583,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation, {iterations: 3});
 
       expect(animation.start).not.toBeCalled();
@@ -443,6 +615,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation, {iterations: 1});
 
       expect(animation.start).not.toBeCalled();
@@ -464,6 +637,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation, {iterations: 0});
 
       expect(animation.start).not.toBeCalled();
@@ -482,6 +656,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       Animated.loop(animation).start(cb);
       expect(animation.start).toBeCalled();
       expect(animation.reset).toHaveBeenCalledTimes(1);
@@ -505,6 +680,7 @@ describe('Animated tests', () => {
       };
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const loop = Animated.loop(animation);
       loop.start(cb);
       loop.stop();
@@ -527,6 +703,7 @@ describe('Animated tests', () => {
     };
     const cb = jest.fn();
 
+    // $FlowFixMe[prop-missing]
     const loop = Animated.loop(animation, {resetBeforeIteration: false});
 
     expect(animation.start).not.toBeCalled();
@@ -553,8 +730,10 @@ describe('Animated tests', () => {
   it('restarts sequence normally in a loop if resetBeforeIteration is false', () => {
     const anim1 = {start: jest.fn(), stop: jest.fn()};
     const anim2 = {start: jest.fn(), stop: jest.fn()};
+    // $FlowFixMe[prop-missing]
     const seq = Animated.sequence([anim1, anim2]);
 
+    // $FlowFixMe[prop-missing]
     const loop = Animated.loop(seq, {resetBeforeIteration: false});
 
     loop.start();
@@ -582,6 +761,8 @@ describe('Animated tests', () => {
     it('works with an empty element in array', () => {
       const anim1 = {start: jest.fn()};
       const cb = jest.fn();
+      // $FlowFixMe[incompatible-call]
+      // $FlowFixMe[prop-missing]
       Animated.parallel([null, anim1]).start(cb);
 
       expect(anim1.start).toBeCalled();
@@ -595,6 +776,8 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
+      // $FlowFixMe[prop-missing]
       const par = Animated.parallel([anim1, anim2]);
 
       expect(anim1.start).not.toBeCalled();
@@ -618,6 +801,7 @@ describe('Animated tests', () => {
       const anim2 = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.parallel([anim1, anim2]);
       seq.start(cb);
       seq.stop();
@@ -639,6 +823,7 @@ describe('Animated tests', () => {
       const anim3 = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
 
+      // $FlowFixMe[prop-missing]
       const seq = Animated.parallel([anim1, anim2, anim3]);
       seq.start(cb);
 
@@ -666,6 +851,7 @@ describe('Animated tests', () => {
     it('should call anim after delay in sequence', () => {
       const anim = {start: jest.fn(), stop: jest.fn()};
       const cb = jest.fn();
+      // $FlowFixMe[prop-missing]
       Animated.sequence([Animated.delay(1000), anim]).start(cb);
       jest.runAllTimers();
       expect(anim.start.mock.calls.length).toBe(1);
@@ -726,6 +912,7 @@ describe('Animated tests', () => {
       });
       const listener2 = jest.fn();
       const forkedHandler = Animated.forkEvent(handler, listener2);
+      // $FlowFixMe[prop-missing]
       forkedHandler({foo: 42});
       expect(value.__getValue()).toBe(42);
       expect(listener.mock.calls.length).toBe(1);
@@ -738,6 +925,7 @@ describe('Animated tests', () => {
       const listener = jest.fn();
       const listener2 = jest.fn();
       const forkedHandler = Animated.forkEvent(listener, listener2);
+      // $FlowFixMe[prop-missing]
       forkedHandler({foo: 42});
       expect(listener.mock.calls.length).toBe(1);
       expect(listener).toBeCalledWith({foo: 42});
@@ -749,6 +937,7 @@ describe('Animated tests', () => {
       const listener = undefined;
       const listener2 = jest.fn();
       const forkedHandler = Animated.forkEvent(listener, listener2);
+      // $FlowFixMe[prop-missing]
       forkedHandler({foo: 42});
       expect(listener2.mock.calls.length).toBe(1);
       expect(listener2).toBeCalledWith({foo: 42});
@@ -756,15 +945,14 @@ describe('Animated tests', () => {
   });
 
   describe('Animated Interactions', () => {
-    /*eslint-disable no-shadow*/
-    let Animated;
-    /*eslint-enable*/
+    let Animated; // eslint-disable-line no-shadow
     let InteractionManager;
 
     beforeEach(() => {
       jest.mock('../../Interaction/InteractionManager');
       Animated = require('../Animated').default;
-      InteractionManager = require('../../Interaction/InteractionManager');
+      InteractionManager =
+        require('../../Interaction/InteractionManager').default;
     });
 
     afterEach(() => {
@@ -772,6 +960,7 @@ describe('Animated tests', () => {
     });
 
     it('registers an interaction by default', () => {
+      // $FlowFixMe[prop-missing]
       InteractionManager.createInteractionHandle.mockReturnValue(777);
 
       const value = new Animated.Value(0);
@@ -876,6 +1065,7 @@ describe('Animated tests', () => {
 
       const node = new AnimatedProps(
         {
+          // $FlowFixMe[cannot-spread-indexer]
           style: {
             opacity: vec.x.interpolate({
               inputRange: [0, 42],
@@ -1072,6 +1262,7 @@ describe('Animated tests', () => {
       color = new Animated.Color('unknown');
       expect(color.__getValue()).toEqual('rgba(0, 0, 0, 1)');
 
+      // $FlowFixMe[incompatible-call]
       color = new Animated.Color({key: 'value'});
       expect(color.__getValue()).toEqual('rgba(0, 0, 0, 1)');
     });

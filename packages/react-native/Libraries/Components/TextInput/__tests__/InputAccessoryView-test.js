@@ -6,19 +6,18 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
 const render = require('../../../../jest/renderer');
-const View = require('../../View/View');
+const View = require('../../View/View').default;
 const InputAccessoryView = require('../InputAccessoryView').default;
 const React = require('react');
 
-describe('<InputAccessoryView />', () => {
-  it('should render as <RCTInputAccessoryView> when mocked', () => {
-    const instance = render.create(
+describe('InputAccessoryView', () => {
+  it('should render as <RCTInputAccessoryView> when mocked', async () => {
+    const instance = await render.create(
       <InputAccessoryView nativeID="1">
         <View />
       </InputAccessoryView>,
@@ -26,30 +25,10 @@ describe('<InputAccessoryView />', () => {
     expect(instance).toMatchSnapshot();
   });
 
-  it('should shallow render as <InputAccessoryView> when mocked', () => {
-    const output = render.shallow(
-      <InputAccessoryView nativeID="1">
-        <View />
-      </InputAccessoryView>,
-    );
-    expect(output).toMatchSnapshot();
-  });
-
-  it('should shallow render as <InputAccessoryView> when not mocked', () => {
+  it('should render as <RCTInputAccessoryView> when not mocked', async () => {
     jest.dontMock('../InputAccessoryView');
 
-    const output = render.shallow(
-      <InputAccessoryView nativeID="1">
-        <View />
-      </InputAccessoryView>,
-    );
-    expect(output).toMatchSnapshot();
-  });
-
-  it('should render as <RCTInputAccessoryView> when not mocked', () => {
-    jest.dontMock('../InputAccessoryView');
-
-    const instance = render.create(
+    const instance = await render.create(
       <InputAccessoryView nativeID="1">
         <View />
       </InputAccessoryView>,

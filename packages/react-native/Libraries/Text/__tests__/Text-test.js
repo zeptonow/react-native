@@ -4,36 +4,41 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
-'use strict';
+import type {ReactTestRenderer} from 'react-test-renderer';
 
-const render = require('../../../jest/renderer');
-const Text = require('../Text');
-const React = require('react');
+import {create} from '../../../jest/renderer';
+import flattenStyle from '../../StyleSheet/flattenStyle';
+import * as React from 'react';
+
+const Text = require('../Text').default;
 
 jest.unmock('../Text');
 jest.unmock('../TextNativeComponent');
 
-function omitRef(json) {
+function omitRefAndFlattenStyle(instance: ReactTestRenderer) {
+  const json = instance.toJSON();
+  if (json == null) {
+    throw new Error('Expected `instance.toJSON()` to be non-null');
+  }
   // Omit `ref` for forward-compatibility with `enableRefAsProp`.
   delete json.props.ref;
+  json.props.style = flattenStyle(json.props.style);
   return json;
 }
 
 describe('Text', () => {
-  it('default render', () => {
-    const instance = render.create(<Text />);
+  it('default render', async () => {
+    const instance = await create(<Text />);
 
-    expect(omitRef(instance.toJSON())).toMatchInlineSnapshot(`
+    expect(omitRefAndFlattenStyle(instance)).toMatchInlineSnapshot(`
       <RCTText
         accessible={true}
         allowFontScaling={true}
         ellipsizeMode="tail"
-        isHighlighted={false}
-        selectionColor={null}
       />
     `);
   });
@@ -44,30 +49,29 @@ describe('Text', () => {
 });
 
 describe('Text compat with web', () => {
-  it('renders core props', () => {
+  it('renders core props', async () => {
     const props = {
       id: 'id',
       tabIndex: 0,
       testID: 'testID',
     };
 
-    const instance = render.create(<Text {...props} />);
+    // $FlowFixMe[prop-missing]
+    const instance = await create(<Text {...props} />);
 
-    expect(omitRef(instance.toJSON())).toMatchInlineSnapshot(`
+    expect(omitRefAndFlattenStyle(instance)).toMatchInlineSnapshot(`
       <RCTText
         accessible={true}
         allowFontScaling={true}
         ellipsizeMode="tail"
-        isHighlighted={false}
         nativeID="id"
-        selectionColor={null}
         tabIndex={0}
         testID="testID"
       />
     `);
   });
 
-  it('renders "aria-*" props', () => {
+  it('renders "aria-*" props', async () => {
     const props = {
       'aria-activedescendant': 'activedescendant',
       'aria-atomic': true,
@@ -117,9 +121,11 @@ describe('Text compat with web', () => {
       'aria-valuetext': '3',
     };
 
-    const instance = render.create(<Text {...props} />);
+    // $FlowFixMe[prop-missing]
+    // $FlowFixMe[incompatible-type]
+    const instance = await create(<Text {...props} />);
 
-    expect(omitRef(instance.toJSON())).toMatchInlineSnapshot(`
+    expect(omitRefAndFlattenStyle(instance)).toMatchInlineSnapshot(`
       <RCTText
         accessibilityLabel="label"
         accessibilityState={
@@ -174,14 +180,12 @@ describe('Text compat with web', () => {
         aria-valuetext="3"
         disabled={true}
         ellipsizeMode="tail"
-        isHighlighted={false}
         role="main"
-        selectionColor={null}
       />
     `);
   });
 
-  it('renders styles', () => {
+  it('renders styles', async () => {
     const style = {
       display: 'flex',
       flex: 1,
@@ -191,16 +195,16 @@ describe('Text compat with web', () => {
       verticalAlign: 'middle',
     };
 
-    const instance = render.create(<Text style={style} />);
+    // $FlowFixMe[prop-missing]
+    // $FlowFixMe[incompatible-type]
+    const instance = await create(<Text style={style} />);
 
-    expect(omitRef(instance.toJSON())).toMatchInlineSnapshot(`
+    expect(omitRefAndFlattenStyle(instance)).toMatchInlineSnapshot(`
       <RCTText
         accessible={true}
         allowFontScaling={true}
         ellipsizeMode="tail"
-        isHighlighted={false}
         selectable={false}
-        selectionColor={null}
         style={
           Object {
             "backgroundColor": "white",
@@ -208,6 +212,8 @@ describe('Text compat with web', () => {
             "flex": 1,
             "marginInlineStart": 10,
             "textAlignVertical": "center",
+            "userSelect": undefined,
+            "verticalAlign": undefined,
           }
         }
       />

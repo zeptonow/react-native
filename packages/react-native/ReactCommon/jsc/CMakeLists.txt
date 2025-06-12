@@ -10,26 +10,25 @@
 cmake_minimum_required(VERSION 3.13)
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-add_compile_options(
-        -fexceptions
-        -frtti
-        -O3
-        -Wno-unused-lambda-capture
-        -DLOG_TAG=\"ReactNative\")
+include(${REACT_COMMON_DIR}/cmake-utils/react-native-flags.cmake)
+include(${REACT_ANDROID_DIR}/src/main/jni/first-party/jni-lib-merge/SoMerging-utils.cmake)
 
 add_library(jscruntime
-        STATIC
+        OBJECT
         JSCRuntime.h
         JSCRuntime.cpp)
 
 target_include_directories(jscruntime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_merge_so(jscruntime)
 
 target_link_libraries(jscruntime
-        folly_runtime
         jsc
         jsi
-        glog)
+        reactnative)
 
 if(NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
         target_compile_options(jscruntime PRIVATE -DNDEBUG)
 endif()
+
+target_compile_reactnative_options(jscruntime PRIVATE)
+target_compile_options(jscruntime PRIVATE -O3 -Wno-unused-lambda-capture)

@@ -93,12 +93,21 @@ const RE_BABEL_CODE_FRAME_MARKER_PATTERN = new RegExp(
   'm',
 );
 
+export function hasComponentStack(args: $ReadOnlyArray<mixed>): boolean {
+  for (const arg of args) {
+    if (typeof arg === 'string' && isComponentStack(arg)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export type ExtendedExceptionData = ExceptionData & {
   isComponentError: boolean,
   ...
 };
 export type Category = string;
-export type CodeFrame = $ReadOnly<{|
+export type CodeFrame = $ReadOnly<{
   content: string,
   location: ?{
     row: number,
@@ -111,26 +120,26 @@ export type CodeFrame = $ReadOnly<{|
   // we gained the ability to use the collapse flag, but
   // it is not integrated into the LogBox UI.
   collapse?: boolean,
-|}>;
-export type Message = $ReadOnly<{|
+}>;
+export type Message = $ReadOnly<{
   content: string,
   substitutions: $ReadOnlyArray<
-    $ReadOnly<{|
+    $ReadOnly<{
       length: number,
       offset: number,
-    |}>,
+    }>,
   >,
-|}>;
+}>;
 
 export type ComponentStack = $ReadOnlyArray<CodeFrame>;
 export type ComponentStackType = 'legacy' | 'stack';
 
 const SUBSTITUTION = UTFSequence.BOM + '%s';
 
-export function parseInterpolation(args: $ReadOnlyArray<mixed>): $ReadOnly<{|
+export function parseInterpolation(args: $ReadOnlyArray<mixed>): $ReadOnly<{
   category: Category,
   message: Message,
-|}> {
+}> {
   const categoryParts = [];
   const contentParts = [];
   const substitutionOffsets = [];
@@ -435,13 +444,25 @@ export function parseLogBoxException(
   };
 }
 
-export function parseLogBoxLog(args: $ReadOnlyArray<mixed>): {|
+export function withoutANSIColorStyles(message: mixed): mixed {
+  if (typeof message !== 'string') {
+    return message;
+  }
+
+  return message.replace(
+    // eslint-disable-next-line no-control-regex
+    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+    '',
+  );
+}
+
+export function parseLogBoxLog(args: $ReadOnlyArray<mixed>): {
   componentStack: ComponentStack,
   componentStackType: ComponentStackType,
   category: Category,
   message: Message,
-|} {
-  const message = args[0];
+} {
+  const message = withoutANSIColorStyles(args[0]);
   let argsWithoutComponentStack: Array<mixed> = [];
   let componentStack: ComponentStack = [];
   let componentStackType = 'legacy';
@@ -488,6 +509,8 @@ export function parseLogBoxLog(args: $ReadOnlyArray<mixed>): {|
   return {
     ...parseInterpolation(argsWithoutComponentStack),
     componentStack,
+    /* $FlowFixMe[incompatible-return] Natural Inference rollout. See
+     * https://fburl.com/workplace/6291gfvu */
     componentStackType,
   };
 }

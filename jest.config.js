@@ -4,12 +4,20 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict
  * @format
  */
 
 'use strict';
 
+// $FlowFixMe[cannot-resolve-module]
+// $FlowFixMe[untyped-import]
 const {defaults} = require('jest-config');
+
+const PODS_LOCATIONS = [
+  'packages/rn-tester/Pods',
+  'private/helloworld/ios/Pods',
+];
 
 module.exports = {
   transform: {
@@ -30,19 +38,25 @@ module.exports = {
   testRegex: '/__tests__/.*-test(\\.fb)?\\.js$',
   testPathIgnorePatterns: [
     '/node_modules/',
-    '<rootDir>/packages/react-native/template',
     '<rootDir>/packages/react-native/sdks',
     '<rootDir>/packages/react-native/Libraries/Renderer',
-    '<rootDir>/packages/rn-tester/e2e',
-    '<rootDir>/packages/react-native-test-renderer/src',
-  ],
+    '<rootDir>/packages/react-native/sdks/hermes/',
+    ...PODS_LOCATIONS,
+  ] /*:: as $ReadOnlyArray<string> */,
   transformIgnorePatterns: ['node_modules/(?!@react-native/)'],
   haste: {
     defaultPlatform: 'ios',
     platforms: ['ios', 'android'],
   },
-  moduleFileExtensions: ['fb.js'].concat(defaults.moduleFileExtensions),
-  modulePathIgnorePatterns: ['scripts/.*/__fixtures__/'],
+  moduleFileExtensions: [
+    'fb.js',
+    ...defaults.moduleFileExtensions,
+  ] /*:: as $ReadOnlyArray<string> */,
+  modulePathIgnorePatterns: [
+    'scripts/.*/__fixtures__/',
+    '<rootDir>/packages/react-native/sdks/hermes/',
+    ...PODS_LOCATIONS,
+  ] /*:: as $ReadOnlyArray<string> */,
   unmockedModulePathPatterns: [
     'node_modules/react/',
     'packages/react-native/Libraries/Renderer',

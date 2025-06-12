@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use-strict';
@@ -401,7 +400,7 @@ describe('buildSchemaFromConfigType', () => {
     type: 'NativeModule',
     aliasMap: {},
     enumMap: {},
-    spec: {eventEmitters: [], properties: []},
+    spec: {eventEmitters: [], methods: []},
     moduleName: '',
   };
 
@@ -423,6 +422,8 @@ describe('buildSchemaFromConfigType', () => {
       astMock,
       wrapComponentSchemaMock,
       buildComponentSchemaMock,
+      /* $FlowFixMe[incompatible-call] Natural Inference rollout. See
+       * https://fburl.com/workplace/6291gfvu */
       buildModuleSchemaMock,
       parser,
       flowTranslateTypeAnnotation,
@@ -837,7 +838,7 @@ describe('buildSchema', () => {
             enumMap: {},
             spec: {
               eventEmitters: [],
-              properties: [
+              methods: [
                 {
                   name: 'getArray',
                   optional: false,
@@ -851,7 +852,10 @@ describe('buildSchema', () => {
                       {
                         name: 'a',
                         optional: false,
-                        typeAnnotation: {type: 'ArrayTypeAnnotation'},
+                        typeAnnotation: {
+                          type: 'ArrayTypeAnnotation',
+                          elementType: {type: 'AnyTypeAnnotation'},
+                        },
                       },
                     ],
                   },
@@ -1249,7 +1253,7 @@ describe('buildModuleSchema', () => {
       moduleName: 'SampleTurboModule',
       spec: {
         eventEmitters: [],
-        properties: [
+        methods: [
           {
             name: 'getArray',
             optional: false,
@@ -1258,7 +1262,10 @@ describe('buildModuleSchema', () => {
                 {
                   name: 'a',
                   optional: false,
-                  typeAnnotation: {type: 'ArrayTypeAnnotation'},
+                  typeAnnotation: {
+                    type: 'ArrayTypeAnnotation',
+                    elementType: {type: 'AnyTypeAnnotation'},
+                  },
                 },
               ],
               returnTypeAnnotation: {

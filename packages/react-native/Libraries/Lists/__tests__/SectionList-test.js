@@ -4,19 +4,17 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
-'use strict';
-
+import {create} from '../../../jest/renderer';
 import SectionList from '../SectionList';
 import * as React from 'react';
-import ReactTestRenderer from 'react-test-renderer';
 
 describe('SectionList', () => {
-  it('renders empty list', () => {
-    const component = ReactTestRenderer.create(
+  it('renders empty list', async () => {
+    const component = await create(
       <SectionList
         sections={[]}
         renderItem={({item}) => <item v={item.key} />}
@@ -24,8 +22,8 @@ describe('SectionList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('rendering empty section headers is fine', () => {
-    const component = ReactTestRenderer.create(
+  it('rendering empty section headers is fine', async () => {
+    const component = await create(
       <SectionList
         sections={[{key: 's1', data: [{key: 'i1'}, {key: 'i2'}]}]}
         renderItem={({item}) => <item v={item.key} />}
@@ -34,24 +32,27 @@ describe('SectionList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders all the bells and whistles', () => {
-    const component = ReactTestRenderer.create(
+  it('renders all the bells and whistles', async () => {
+    const component = await create(
       <SectionList
         initialNumToRender={Infinity}
         ItemSeparatorComponent={props => (
           <defaultItemSeparator v={propStr(props)} />
         )}
         ListEmptyComponent={props => <empty v={propStr(props)} />}
+        // $FlowFixMe[incompatible-type]
         ListFooterComponent={props => <footer v={propStr(props)} />}
+        // $FlowFixMe[incompatible-type]
         ListHeaderComponent={props => <header v={propStr(props)} />}
         SectionSeparatorComponent={props => (
           <sectionSeparator v={propStr(props)} />
         )}
         sections={[
+          // $FlowFixMe[incompatible-type]
           {
             renderItem: props => <itemForSection1 v={propStr(props)} />,
             key: 's1',
-            keyExtractor: (item, index) => item.id,
+            keyExtractor: (item, index) => item?.id,
             ItemSeparatorComponent: props => (
               <itemSeparatorForSection1 v={propStr(props)} />
             ),
@@ -75,8 +76,8 @@ describe('SectionList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders a footer when there is no data', () => {
-    const component = ReactTestRenderer.create(
+  it('renders a footer when there is no data', async () => {
+    const component = await create(
       <SectionList
         sections={[{key: 's1', data: []}]}
         renderItem={({item}) => <item v={item.key} />}
@@ -86,8 +87,8 @@ describe('SectionList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders a footer when there is no data and no header', () => {
-    const component = ReactTestRenderer.create(
+  it('renders a footer when there is no data and no header', async () => {
+    const component = await create(
       <SectionList
         sections={[{key: 's1', data: []}]}
         renderItem={({item}) => <item v={item.key} />}
@@ -98,11 +99,12 @@ describe('SectionList', () => {
   });
 });
 
-function propStr(props) {
+function propStr(props: $ReadOnly<{[string]: $FlowFixMe}>) {
   return Object.keys(props)
     .map(k => {
       const propObj = props[k] || {};
-      return `${k}:${propObj.key || propObj.id || props[k]}`;
+      // $FlowFixMe[incompatible-type]
+      return `${k}:${propObj.key ?? propObj.id ?? props[k]}`;
     })
     .join(',');
 }

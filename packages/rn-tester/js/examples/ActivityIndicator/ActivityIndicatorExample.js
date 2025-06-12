@@ -4,10 +4,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
+import type {RNTesterModuleExample} from '../../types/RNTesterTypes';
 import type {Node} from 'react';
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
@@ -152,4 +153,4 @@ exports.examples = [
       return <ActivityIndicator style={styles.centering} size={75} />;
     },
   },
-];
+] as Array<RNTesterModuleExample>;

@@ -7,10 +7,6 @@
 
 #include "JReactInstance.h"
 
-#ifdef WITH_FBSYSTRACE
-#include <fbsystrace.h>
-#endif
-
 #include <cxxreact/JSBigString.h>
 #include <cxxreact/RecoverableError.h>
 #include <fbjni/fbjni.h>
@@ -20,7 +16,7 @@
 #include <jsireact/JSIExecutor.h>
 #include <react/jni/JRuntimeExecutor.h>
 #include <react/jni/JSLogging.h>
-#include <react/runtime/BridgelessJSCallInvoker.h>
+#include <react/renderer/runtimescheduler/RuntimeSchedulerCallInvoker.h>
 #include <react/runtime/BridgelessNativeMethodCallInvoker.h>
 #include "JavaTimerRegistry.h"
 
@@ -52,10 +48,11 @@ JReactInstance::JReactInstance(
   jReactExceptionManager_ = jni::make_global(jReactExceptionManager);
   auto onJsError =
       [weakJReactExceptionManager = jni::make_weak(jReactExceptionManager)](
-          const JsErrorHandler::ParsedError& error) mutable noexcept {
+          jsi::Runtime& runtime,
+          const JsErrorHandler::ProcessedError& error) mutable noexcept {
         if (auto jReactExceptionManager =
                 weakJReactExceptionManager.lockLocal()) {
-          jReactExceptionManager->reportJsException(error);
+          jReactExceptionManager->reportJsException(runtime, error);
         }
       };
 
@@ -74,6 +71,7 @@ JReactInstance::JReactInstance(
   timerManager->setRuntimeExecutor(bufferedRuntimeExecutor);
 
   ReactInstance::JSRuntimeFlags options = {.isProfiling = isProfiling};
+  // TODO T194671568 Consider moving runtime init to the JS thread.
   instance_->initializeRuntime(options, [this](jsi::Runtime& runtime) {
     react::Logger androidLogger =
         static_cast<void (*)(const std::string&, unsigned int)>(
@@ -90,8 +88,8 @@ JReactInstance::JReactInstance(
 
   auto unbufferedRuntimeExecutor = instance_->getUnbufferedRuntimeExecutor();
   // Set up the JS and native modules call invokers (for TurboModules)
-  auto jsInvoker =
-      std::make_unique<BridgelessJSCallInvoker>(unbufferedRuntimeExecutor);
+  auto jsInvoker = std::make_unique<RuntimeSchedulerCallInvoker>(
+      instance_->getRuntimeScheduler());
   jsCallInvokerHolder_ = jni::make_global(
       CallInvokerHolder::newObjectCxxArgs(std::move(jsInvoker)));
   auto nativeMethodCallInvoker =

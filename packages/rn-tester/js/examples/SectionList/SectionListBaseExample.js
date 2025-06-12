@@ -33,7 +33,7 @@ const DATA = [
   },
   {
     title: 'Desserts',
-    data: ['Cheesecake', 'Ice Cream'],
+    data: ['Cheesecake', 'Brownie'],
   },
 ];
 
@@ -64,18 +64,27 @@ const Item = ({item, section, separators}) => {
   );
 };
 
-type Props = {
-  exampleProps: Partial<React.ElementConfig<typeof SectionList>>,
+type Props = $ReadOnly<{
+  // $FlowIgnore[unclear-type]
+  exampleProps: Partial<React.ElementConfig<typeof SectionList<any>>>,
   onTest?: ?() => void,
   testLabel?: ?string,
   testOutput?: ?string,
   children?: ?React.Node,
-};
+}>;
 
-const SectionListBaseExample: React.AbstractComponent<
-  Props,
-  React.ElementRef<typeof SectionList>,
-> = React.forwardRef((props: Props, ref): React.Node => {
+const SectionListBaseExample: component(
+  // $FlowIgnore[unclear-type]
+  ref: React.RefSetter<SectionList<any>>,
+  ...props: Props
+) = ({
+  ref,
+  ...props
+}: {
+  // $FlowIgnore[unclear-type]
+  ref: React.RefSetter<SectionList<any>>,
+  ...Props,
+}): React.Node => {
   return (
     <View style={styles.container}>
       {props.testOutput != null ? (
@@ -97,7 +106,6 @@ const SectionListBaseExample: React.AbstractComponent<
         ref={ref}
         testID="section_list"
         accessibilityRole="list"
-        // $FlowFixMe[incompatible-type]
         sections={DATA}
         keyExtractor={(item, index) => item + index}
         style={styles.list}
@@ -111,7 +119,7 @@ const SectionListBaseExample: React.AbstractComponent<
       />
     </View>
   );
-});
+};
 
 const styles = StyleSheet.create({
   item: {

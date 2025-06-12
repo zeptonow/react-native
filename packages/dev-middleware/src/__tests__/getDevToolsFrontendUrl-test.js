@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import getDevToolsFrontendUrl from '../utils/getDevToolsFrontendUrl';
@@ -18,12 +17,11 @@ describe('getDevToolsFrontendUrl', () => {
 
   const experiments = {
     enableNetworkInspector: false,
-    enableNewDebugger: false,
     enableOpenDebuggerRedirect: false,
-    useFuseboxInternalBranding: false,
+    enableStandaloneFuseboxShell: false,
   };
 
-  describe('relative: false, launchId: undefined (default)', () => {
+  describe('relative: false, launchId: undefined, telemetryInfo: undefined, (default)', () => {
     test('should return a valid url for all experiments off', async () => {
       const actual = getDevToolsFrontendUrl(
         experiments,
@@ -40,7 +38,7 @@ describe('getDevToolsFrontendUrl', () => {
 
     test('should return a valid url for enableNetworkInspector experiment on', async () => {
       const actual = getDevToolsFrontendUrl(
-        {...experiments, enableNetworkInspector: true, enableNewDebugger: true},
+        {...experiments, enableNetworkInspector: true},
         webSocketDebuggerUrl,
         devServerUrl,
       );
@@ -97,7 +95,7 @@ describe('getDevToolsFrontendUrl', () => {
 
     test('should return a valid url for enableNetworkInspector experiment on', async () => {
       const actual = getDevToolsFrontendUrl(
-        {...experiments, enableNetworkInspector: true, enableNewDebugger: true},
+        {...experiments, enableNetworkInspector: true},
         webSocketDebuggerUrl,
         devServerUrl,
         {
@@ -130,8 +128,13 @@ describe('getDevToolsFrontendUrl', () => {
     });
   });
 
-  describe('launchId: non-null', () => {
+  describe('non-null launchId and telemetryInfo', () => {
     const launchId = 'dG8gdGhlIG1vb24h%21';
+
+    const telemetryInfo = JSON.stringify({
+      username: 'testuser123',
+      reactTechnologiesDeveloper: true,
+    });
 
     test('should return a valid url for all experiments off', async () => {
       const actual = getDevToolsFrontendUrl(
@@ -140,6 +143,7 @@ describe('getDevToolsFrontendUrl', () => {
         devServerUrl,
         {
           launchId,
+          telemetryInfo,
         },
       );
       const url = new URL(actual);
@@ -148,15 +152,19 @@ describe('getDevToolsFrontendUrl', () => {
         '/inspector/debug?device=1a9372c&page=-1',
       );
       expect(url.searchParams.get('launchId')).toBe(launchId);
+      expect(JSON.parse(url.searchParams.get('telemetryInfo') || '{}')).toEqual(
+        JSON.parse(telemetryInfo),
+      );
     });
 
     test('should return a valid url for enableNetworkInspector experiment on', async () => {
       const actual = getDevToolsFrontendUrl(
-        {...experiments, enableNetworkInspector: true, enableNewDebugger: true},
+        {...experiments, enableNetworkInspector: true},
         webSocketDebuggerUrl,
         devServerUrl,
         {
           launchId,
+          telemetryInfo,
         },
       );
       const url = new URL(actual);
@@ -166,6 +174,9 @@ describe('getDevToolsFrontendUrl', () => {
         '/inspector/debug?device=1a9372c&page=-1',
       );
       expect(url.searchParams.get('launchId')).toBe(launchId);
+      expect(JSON.parse(url.searchParams.get('telemetryInfo') || '{}')).toEqual(
+        JSON.parse(telemetryInfo),
+      );
     });
 
     test('should return a full WS URL if on a different host than the dev server', () => {
@@ -177,6 +188,7 @@ describe('getDevToolsFrontendUrl', () => {
         devServerUrl,
         {
           launchId,
+          telemetryInfo,
         },
       );
       const url = new URL(actual);
@@ -184,6 +196,9 @@ describe('getDevToolsFrontendUrl', () => {
         'localhost:8082/inspector/debug?device=1a9372c&page=-1',
       );
       expect(url.searchParams.get('launchId')).toBe(launchId);
+      expect(JSON.parse(url.searchParams.get('telemetryInfo') || '{}')).toEqual(
+        JSON.parse(telemetryInfo),
+      );
     });
   });
 

@@ -4,13 +4,13 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
 import type {PlatformTestComponentBaseProps} from '../PlatformTest/RNTesterPlatformTestTypes';
 import type {PlatformTestContext} from '../PlatformTest/RNTesterPlatformTestTypes';
-import type {PointerEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import type {PointerEvent} from 'react-native';
 
 import RNTesterPlatformTest from '../PlatformTest/RNTesterPlatformTest';
 import {check_PointerEvent} from './PointerEventSupport';
@@ -33,11 +33,6 @@ function checkClickEventProperties(
   assert_equals(event.nativeEvent.tiltX, 0, 'default tiltX is 0');
   assert_equals(event.nativeEvent.tiltY, 0, 'default tiltY is 0');
   assert_equals(event.nativeEvent.twist, 0, 'default twist is 0');
-  assert_equals(
-    event.nativeEvent.isPrimary,
-    false,
-    'default isPrimary is false',
-  );
 }
 
 function PointerEventClickTouchTestCase(props: PlatformTestComponentBaseProps) {

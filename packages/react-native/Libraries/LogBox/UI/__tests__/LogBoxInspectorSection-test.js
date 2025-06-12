@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import Text from '../../../Text/Text';
@@ -16,8 +15,8 @@ const LogBoxInspectorSection = require('../LogBoxInspectorSection').default;
 const React = require('react');
 
 describe('LogBoxInspectorSection', () => {
-  it('should render with only heading', () => {
-    const output = render.shallowRender(
+  it('should render with only heading', async () => {
+    const output = await render.create(
       <LogBoxInspectorSection heading="Test Section">
         <Text>Child</Text>
       </LogBoxInspectorSection>,
@@ -26,8 +25,8 @@ describe('LogBoxInspectorSection', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should render with action on the right', () => {
-    const output = render.shallowRender(
+  it('should render with action on the right', async () => {
+    const output = await render.create(
       <LogBoxInspectorSection
         heading="Test Section"
         action={<Text>Right</Text>}>

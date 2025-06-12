@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 import type {
@@ -21,7 +21,8 @@ import RNTesterList from './RNTesterList';
 export const Screens = {
   COMPONENTS: 'components',
   APIS: 'apis',
-};
+  PLAYGROUNDS: 'playgrounds',
+} as const;
 
 export const initialNavigationState: RNTesterNavigationState = {
   activeModuleKey: null,
@@ -97,7 +98,9 @@ export const getExamplesListWithRecentlyUsed = ({
       },
       {
         key: 'COMPONENTS',
-        data: components,
+        data: components.sort((a, b) =>
+          a.module.title.localeCompare(b.module.title),
+        ),
         title: 'Components',
       },
     ],
@@ -109,7 +112,7 @@ export const getExamplesListWithRecentlyUsed = ({
       },
       {
         key: 'APIS',
-        data: apis,
+        data: apis.sort((a, b) => a.module.title.localeCompare(b.module.title)),
         title: 'APIs',
       },
     ],

@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 'use strict';
@@ -44,7 +44,7 @@ exports.description = 'Transparent view receiving touch events';
 exports.examples = [
   {
     title: 'TransparentHitTestExample',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <TransparentHitTestExample />;
     },
   },

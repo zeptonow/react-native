@@ -6,11 +6,9 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import net from 'net';
-import fetch from 'node-fetch';
 
 /**
  * Determine whether we can run the dev server.

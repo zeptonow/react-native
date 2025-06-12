@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 // Very incomplete types for the undici package.
@@ -16,6 +15,13 @@ declare interface undici$Agent$Options {
 }
 
 declare module 'undici' {
+  declare export type RequestOptions = $ReadOnly<{
+    dispatcher?: Dispatcher,
+    method?: string,
+    headers?: HeadersInit,
+    ...
+  }>;
+
   declare export class Dispatcher extends events$EventEmitter {
     constructor(): void;
   }
@@ -23,4 +29,17 @@ declare module 'undici' {
   declare export class Agent extends Dispatcher {
     constructor(opts?: undici$Agent$Options): void;
   }
+
+  declare export function request(
+    url: string | URL,
+    options: RequestOptions,
+  ): Promise<{
+    statusCode: number,
+    headers: Headers,
+    body: {
+      read(): Promise<Buffer>,
+      ...
+    },
+    ...
+  }>;
 }

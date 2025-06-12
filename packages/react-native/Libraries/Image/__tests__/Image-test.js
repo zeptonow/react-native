@@ -6,44 +6,33 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
-import type {ElementRef} from 'react';
-
 import NativeImageLoaderAndroid from '../NativeImageLoaderAndroid';
 import NativeImageLoaderIOS from '../NativeImageLoaderIOS';
+import * as React from 'react';
 import {act, create} from 'react-test-renderer';
 
 const render = require('../../../jest/renderer');
-const Image = require('../Image');
+const Image = require('../Image').default;
 const ImageInjection = require('../ImageInjection');
-const React = require('react');
 
-describe('<Image />', () => {
-  it('should render as <Image> when mocked', () => {
-    const instance = render.create(<Image source={{uri: 'foo-bar.jpg'}} />);
+describe('Image', () => {
+  it('should render as <Image> when mocked', async () => {
+    const instance = await render.create(
+      <Image source={{uri: 'foo-bar.jpg'}} />,
+    );
     expect(instance).toMatchSnapshot();
   });
 
-  it('should shallow render as <Image> when mocked', () => {
-    const output = render.shallow(<Image source={{uri: 'foo-bar.jpg'}} />);
-    expect(output).toMatchSnapshot();
-  });
-
-  it('should shallow render as <ForwardRef(Image)> when not mocked', () => {
+  it('should render as <RCTImageView> when not mocked', async () => {
     jest.dontMock('../Image');
 
-    const output = render.shallow(<Image source={{uri: 'foo-bar.jpg'}} />);
-    expect(output).toMatchSnapshot();
-  });
-
-  it('should render as <RCTImageView> when not mocked', () => {
-    jest.dontMock('../Image');
-
-    const instance = render.create(<Image source={{uri: 'foo-bar.jpg'}} />);
+    const instance = await render.create(
+      <Image source={{uri: 'foo-bar.jpg'}} />,
+    );
     expect(instance).toMatchSnapshot();
   });
 
@@ -54,7 +43,7 @@ describe('<Image />', () => {
     let imageInstanceFromRef1 = null;
     let imageInstanceFromRef2 = null;
 
-    const callback = jest.fn((instance: ElementRef<typeof Image>) => {
+    const callback = jest.fn((instance: React.ElementRef<typeof Image>) => {
       imageInstanceFromCallback = instance;
 
       return () => {
@@ -114,7 +103,7 @@ describe('<Image />', () => {
     let imageInstanceFromCallback = null;
     let imageInstanceFromRef = null;
 
-    const callback = (instance: ElementRef<typeof Image>) => {
+    const callback = (instance: React.ElementRef<typeof Image>) => {
       imageInstanceFromCallback = instance;
 
       return () => {
@@ -224,7 +213,7 @@ describe('<Image />', () => {
   it('should call image attached callbacks (multiple images)', () => {
     jest.dontMock('../Image');
 
-    let imageInstancesFromCallback = new Set<ElementRef<typeof Image>>();
+    let imageInstancesFromCallback = new Set<React.ElementRef<typeof Image>>();
 
     ImageInjection.unstable_registerImageAttachedCallback(instance => {
       imageInstancesFromCallback.add(instance);

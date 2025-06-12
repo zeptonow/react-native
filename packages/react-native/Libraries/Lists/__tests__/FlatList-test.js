@@ -4,19 +4,20 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
-const FlatList = require('../FlatList');
+const {create} = require('../../../jest/renderer');
+const FlatList = require('../FlatList').default;
 const React = require('react');
-const ReactTestRenderer = require('react-test-renderer');
+const {createRef} = require('react');
 
 describe('FlatList', () => {
-  it('renders simple list', () => {
-    const component = ReactTestRenderer.create(
+  it('renders simple list', async () => {
+    const component = await create(
       <FlatList
         data={[{key: 'i1'}, {key: 'i2'}, {key: 'i3'}]}
         renderItem={({item}) => <item value={item.key} />}
@@ -24,8 +25,8 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders simple list (multiple columns)', () => {
-    const component = ReactTestRenderer.create(
+  it('renders simple list (multiple columns)', async () => {
+    const component = await create(
       <FlatList
         data={[{key: 'i1'}, {key: 'i2'}, {key: 'i3'}]}
         renderItem={({item}) => <item value={item.key} />}
@@ -34,11 +35,11 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders simple list using ListItemComponent', () => {
-    function ListItemComponent({item}) {
+  it('renders simple list using ListItemComponent', async () => {
+    function ListItemComponent({item}: $ReadOnly<{item: {key: string}}>) {
       return <item value={item.key} />;
     }
-    const component = ReactTestRenderer.create(
+    const component = await create(
       <FlatList
         data={[{key: 'i1'}, {key: 'i2'}, {key: 'i3'}]}
         ListItemComponent={ListItemComponent}
@@ -46,11 +47,11 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders simple list using ListItemComponent (multiple columns)', () => {
-    function ListItemComponent({item}) {
+  it('renders simple list using ListItemComponent (multiple columns)', async () => {
+    function ListItemComponent({item}: $ReadOnly<{item: {key: string}}>) {
       return <item value={item.key} />;
     }
-    const component = ReactTestRenderer.create(
+    const component = await create(
       <FlatList
         data={[{key: 'i1'}, {key: 'i2'}, {key: 'i3'}]}
         ListItemComponent={ListItemComponent}
@@ -59,14 +60,14 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders empty list', () => {
-    const component = ReactTestRenderer.create(
+  it('renders empty list', async () => {
+    const component = await create(
       <FlatList data={[]} renderItem={({item}) => <item value={item.key} />} />,
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders null list', () => {
-    const component = ReactTestRenderer.create(
+  it('renders null list', async () => {
+    const component = await create(
       <FlatList
         data={undefined}
         renderItem={({item}) => <item value={item.key} />}
@@ -74,16 +75,20 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('renders all the bells and whistles', () => {
-    const component = ReactTestRenderer.create(
+  it('renders all the bells and whistles', async () => {
+    const component = await create(
       <FlatList
         ItemSeparatorComponent={() => <separator />}
         ListEmptyComponent={() => <empty />}
         ListFooterComponent={() => <footer />}
         ListHeaderComponent={() => <header />}
-        data={new Array(5).fill().map((_, ii) => ({id: String(ii)}))}
+        data={new Array<void>(5).fill().map((_, ii) => ({id: String(ii)}))}
         keyExtractor={(item, index) => item.id}
-        getItemLayout={({index}) => ({length: 50, offset: index * 50})}
+        // $FlowFixMe[prop-missing]
+        getItemLayout={({index}: $FlowFixMe) => ({
+          length: 50,
+          offset: index * 50,
+        })}
         numColumns={2}
         refreshing={false}
         onRefresh={jest.fn()}
@@ -92,13 +97,13 @@ describe('FlatList', () => {
     );
     expect(component).toMatchSnapshot();
   });
-  it('getNativeScrollRef for case where it returns a native view', () => {
+  it('getNativeScrollRef for case where it returns a native view', async () => {
     jest.resetModules();
     jest.unmock('../../Components/ScrollView/ScrollView');
 
-    const listRef = React.createRef(null);
+    const listRef = createRef<React.ElementRef<typeof FlatList>>();
 
-    ReactTestRenderer.create(
+    await create(
       <FlatList
         data={[{key: 'outer0'}, {key: 'outer1'}]}
         renderItem={outerInfo => (
@@ -116,25 +121,28 @@ describe('FlatList', () => {
       />,
     );
 
-    const scrollRef = listRef.current.getNativeScrollRef();
+    const scrollRef = listRef.current?.getNativeScrollRef();
 
     // This is checking if the ref acts like a host component. If we had an
     // `isHostComponent(ref)` method, that would be preferred.
-    expect(scrollRef.measure).toBeInstanceOf(jest.fn().constructor);
-    expect(scrollRef.measureLayout).toBeInstanceOf(jest.fn().constructor);
-    expect(scrollRef.measureInWindow).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measure).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measureLayout).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measureInWindow).toBeInstanceOf(jest.fn().constructor);
   });
 
-  it('getNativeScrollRef for case where it returns a native scroll view', () => {
+  it('getNativeScrollRef for case where it returns a native scroll view', async () => {
     jest.resetModules();
     jest.unmock('../../Components/ScrollView/ScrollView');
 
-    function ListItemComponent({item}) {
+    function ListItemComponent({item}: $ReadOnly<{item: {key: string}}>) {
       return <item value={item.key} />;
     }
-    const listRef = React.createRef(null);
+    const listRef = createRef<React.ElementRef<typeof FlatList>>();
 
-    ReactTestRenderer.create(
+    await create(
       <FlatList
         data={[{key: 'i4'}, {key: 'i2'}, {key: 'i3'}]}
         ListItemComponent={ListItemComponent}
@@ -143,16 +151,19 @@ describe('FlatList', () => {
       />,
     );
 
-    const scrollRef = listRef.current.getNativeScrollRef();
+    const scrollRef = listRef.current?.getNativeScrollRef();
 
     // This is checking if the ref acts like a host component. If we had an
     // `isHostComponent(ref)` method, that would be preferred.
-    expect(scrollRef.measure).toBeInstanceOf(jest.fn().constructor);
-    expect(scrollRef.measureLayout).toBeInstanceOf(jest.fn().constructor);
-    expect(scrollRef.measureInWindow).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measure).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measureLayout).toBeInstanceOf(jest.fn().constructor);
+    // $FlowFixMe[method-unbinding]
+    expect(scrollRef?.measureInWindow).toBeInstanceOf(jest.fn().constructor);
   });
 
-  it('calls renderItem for all data items', () => {
+  it('calls renderItem for all data items', async () => {
     const data = [
       {key: 'i1'},
       null,
@@ -164,15 +175,13 @@ describe('FlatList', () => {
     ];
 
     const renderItemInOneColumn = jest.fn();
-    ReactTestRenderer.create(
-      <FlatList data={data} renderItem={renderItemInOneColumn} />,
-    );
+    await create(<FlatList data={data} renderItem={renderItemInOneColumn} />);
 
     expect(renderItemInOneColumn).toHaveBeenCalledTimes(7);
 
     const renderItemInThreeColumns = jest.fn();
 
-    ReactTestRenderer.create(
+    await create(
       <FlatList
         data={data}
         renderItem={renderItemInThreeColumns}
@@ -182,7 +191,7 @@ describe('FlatList', () => {
 
     expect(renderItemInThreeColumns).toHaveBeenCalledTimes(7);
   });
-  it('renders array-like data', () => {
+  it('renders array-like data', async () => {
     const arrayLike = {
       length: 3,
       0: {key: 'i1'},
@@ -190,18 +199,21 @@ describe('FlatList', () => {
       2: {key: 'i3'},
     };
 
-    const component = ReactTestRenderer.create(
+    const component = await create(
       <FlatList
+        // $FlowFixMe[prop-missing]
         data={arrayLike}
         renderItem={({item}) => <item value={item.key} />}
       />,
     );
     expect(component).toMatchSnapshot();
   });
-  it('ignores invalid data', () => {
-    const component = ReactTestRenderer.create(
+  it('ignores invalid data', async () => {
+    const component = await create(
       <FlatList
+        // $FlowExpectedError[incompatible-type]
         data={123456}
+        // $FlowFixMe[missing-local-annot]
         renderItem={({item}) => <item value={item.key} />}
       />,
     );

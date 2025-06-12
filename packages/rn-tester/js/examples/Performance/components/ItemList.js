@@ -6,13 +6,12 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
 import type {ItemDataType} from './itemData';
-import type {ScrollEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import type {ScrollEvent} from 'react-native';
 
 import * as React from 'react';
 import {FlatList, ScrollView, StyleSheet, Text, View} from 'react-native';
@@ -29,11 +28,12 @@ function Item(props: {data: ItemDataType}): React.Node {
   );
 }
 
-interface ItemListProps {
-  data: ItemDataType[];
-  useFlatList?: boolean;
-  onScroll?: (evt: ScrollEvent) => void;
-}
+type ItemListProps = $ReadOnly<{
+  data: ItemDataType[],
+  useFlatList?: boolean,
+  onScroll?: (evt: ScrollEvent) => void,
+  ...
+}>;
 
 function renderItem({item}: {item: ItemDataType, ...}): React.MixedElement {
   return <Item data={item} />;

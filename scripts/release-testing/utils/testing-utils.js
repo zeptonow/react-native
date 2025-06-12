@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
@@ -19,7 +18,7 @@ const {
   generateAndroidArtifacts,
   generateiOSArtifacts,
 } = require('../../releases/utils/release-utils');
-const circleCIArtifactsUtils = require('./circle-ci-artifacts-utils.js');
+const ghaArtifactsUtils = require('./github-actions-utils.js');
 const fs = require('fs');
 // $FlowIgnore[cannot-resolve-module]
 const {spawn} = require('node:child_process');
@@ -28,7 +27,7 @@ const path = require('path');
 const {cp, exec} = require('shelljs');
 
 /*::
-type BuildType = 'dry-run' | 'release' | 'nightly' | 'prealpha';
+type BuildType = 'dry-run' | 'release' | 'nightly';
 */
 
 /*
@@ -152,55 +151,95 @@ function checkPackagerRunning() {
 // === ARTIFACTS === //
 
 /**
- * Setups the CircleCIArtifacts if a token has been passed
+ * Setups the ciArtifacts if a token has been passed
  *
  * Parameters:
- * - @circleciToken a valid CircleCI Token.
+ * - @ciToken a valid GHA Token.
  * - @branchName the branch of the name we want to use to fetch the artifacts.
  */
-async function setupCircleCIArtifacts(
-  circleciToken /*: ?string */,
+async function setupGHAArtifacts(
+  ciToken /*: ?string */,
   branchName /*: string */,
   useLastSuccessfulPipeline /*: boolean */,
-) /*: Promise<?typeof circleCIArtifactsUtils> */ {
-  if (circleciToken == null) {
+) /*: Promise<?typeof ghaArtifactsUtils> */ {
+  if (ciToken == null) {
     return null;
   }
 
   const baseTmpPath = '/tmp/react-native-tmp';
-  await circleCIArtifactsUtils.initialize(
-    circleciToken,
+  await ghaArtifactsUtils.initialize(
+    ciToken,
     baseTmpPath,
     branchName,
     useLastSuccessfulPipeline,
   );
-  return circleCIArtifactsUtils;
+  return ghaArtifactsUtils;
 }
 
-async function downloadArtifactsFromCircleCI(
-  circleCIArtifacts /*: typeof circleCIArtifactsUtils */,
+async function downloadArtifacts(
+  ciArtifacts /*: typeof ghaArtifactsUtils */,
   mavenLocalPath /*: string */,
   localNodeTGZPath /*: string */,
 ) {
-  const mavenLocalURL = await circleCIArtifacts.artifactURLForMavenLocal();
-  const hermesURL = await circleCIArtifacts.artifactURLHermesDebug();
-  const reactNativeURL = await circleCIArtifacts.artifactURLForReactNative();
+  const mavenLocalURL = await ciArtifacts.artifactURLForMavenLocal();
+  const hermesURLZip = await ciArtifacts.artifactURLHermesDebug();
+  const reactNativeURLZip = await ciArtifacts.artifactURLForReactNative();
 
+  // Cleanup destination folder
+  exec(`rm -rf ${ciArtifacts.baseTmpPath()}`);
+  exec(`mkdir ${ciArtifacts.baseTmpPath()}`);
+
+  const hermesPathZip = path.join(
+    ciArtifacts.baseTmpPath(),
+    'hermes-ios-debug.zip',
+  );
+
+  const mavenLocalZipPath = `${mavenLocalPath}.zip`;
+  console.info(
+    `\n[Download] Maven Local Artifacts from ${mavenLocalURL} into ${mavenLocalZipPath}`,
+  );
+  ciArtifacts.downloadArtifact(mavenLocalURL, mavenLocalZipPath);
+  console.info(`Unzipping into ${mavenLocalPath}`);
+  exec(`unzip -oq ${mavenLocalZipPath} -d ${mavenLocalPath}`);
+
+  console.info('\n[Download] Hermes');
+  ciArtifacts.downloadArtifact(hermesURLZip, hermesPathZip);
+  exec(`unzip ${hermesPathZip} -d ${ciArtifacts.baseTmpPath()}/hermes`);
   const hermesPath = path.join(
-    circleCIArtifacts.baseTmpPath(),
+    ciArtifacts.baseTmpPath(),
+    'hermes',
     'hermes-ios-debug.tar.gz',
   );
 
-  console.info(`[Download] Maven Local Artifacts from ${mavenLocalURL}`);
-  const mavenLocalZipPath = `${mavenLocalPath}.zip`;
-  circleCIArtifacts.downloadArtifact(mavenLocalURL, mavenLocalZipPath);
-  exec(`unzip -oq ${mavenLocalZipPath} -d ${mavenLocalPath}`);
-  console.info('[Download] Hermes');
-  circleCIArtifacts.downloadArtifact(hermesURL, hermesPath);
-  console.info(`[Download] React Native from  ${reactNativeURL}`);
-  circleCIArtifacts.downloadArtifact(reactNativeURL, localNodeTGZPath);
+  console.info(`\n[Download] React Native from  ${reactNativeURLZip}`);
+  const reactNativeDestPath = path.join(
+    ciArtifacts.baseTmpPath(),
+    'react-native',
+  );
+  const reactNativeZipDestPath = `${reactNativeDestPath}.zip`;
+  ciArtifacts.downloadArtifact(reactNativeURLZip, reactNativeZipDestPath);
+  exec(`unzip ${reactNativeZipDestPath} -d ${reactNativeDestPath}`);
+  // For some reason, the commit on which the Github Action is running is not the same as the one
+  // that is running locally. This make so that the react-native package is created with a different
+  // commit sha in CI wrt what is used locally.
+  // As a result the react-native tgz is different. The next section of code use package that is created
+  // in CI as source of truth and sends back the new localNodeTGZ path so that the new apps can
+  // use it.
+  const tgzName = fs.readdirSync(reactNativeDestPath).filter(file => {
+    console.log(file);
+    return file.endsWith('.tgz');
+  })[0];
 
-  return hermesPath;
+  if (tgzName == null) {
+    throw new Error('Could not find the tgz file in the react-native folder');
+  }
+
+  const basePath = path.dirname(localNodeTGZPath);
+  const newLocalNodeTGZ = path.join(basePath, tgzName);
+  const reactNativeTGZ = path.join(reactNativeDestPath, tgzName);
+  exec(`mv ${reactNativeTGZ} ${newLocalNodeTGZ}`);
+
+  return {hermesPath, newLocalNodeTGZ};
 }
 
 function buildArtifactsLocally(
@@ -210,7 +249,7 @@ function buildArtifactsLocally(
 ) {
   // this is needed to generate the Android artifacts correctly
   const exitCode = exec(
-    `node scripts/releases/set-rn-version.js --to-version ${releaseVersion} --build-type ${buildType}`,
+    `node scripts/releases/set-rn-artifacts-version.js --to-version ${releaseVersion} --build-type ${buildType}`,
   ).code;
 
   if (exitCode !== 0) {
@@ -270,7 +309,7 @@ function buildArtifactsLocally(
  * It prepares the artifacts required to run a new project created from the template
  *
  * Parameters:
- * - @circleCIArtifacts manager object to manage all the download of CircleCIArtifacts. If null, it will fallback not to use them.
+ * - @ciArtifacts manager object to manage all the download of ciArtifacts. If null, it will fallback not to use them.
  * - @mavenLocalPath path to the local maven repo that is needed by Android.
  * - @localNodeTGZPath path where we want to store the react-native tgz.
  * - @releaseVersion the version that is about to be released.
@@ -281,20 +320,23 @@ function buildArtifactsLocally(
  * - @hermesPath the path to hermes for iOS
  */
 async function prepareArtifacts(
-  circleCIArtifacts /*: ?typeof circleCIArtifactsUtils */,
+  ciArtifacts /*: ?typeof ghaArtifactsUtils */,
   mavenLocalPath /*: string */,
   localNodeTGZPath /*: string */,
   releaseVersion /*: string */,
   buildType /*: BuildType */,
   reactNativePackagePath /*: string */,
-) /*: Promise<string> */ {
-  return circleCIArtifacts != null
-    ? await downloadArtifactsFromCircleCI(
-        circleCIArtifacts,
-        mavenLocalPath,
-        localNodeTGZPath,
-      )
-    : buildArtifactsLocally(releaseVersion, buildType, reactNativePackagePath);
+) /*: Promise<{hermesPath: string, newLocalNodeTGZ: string }> */ {
+  return ciArtifacts != null
+    ? await downloadArtifacts(ciArtifacts, mavenLocalPath, localNodeTGZPath)
+    : {
+        hermesPath: buildArtifactsLocally(
+          releaseVersion,
+          buildType,
+          reactNativePackagePath,
+        ),
+        newLocalNodeTGZ: localNodeTGZPath,
+      };
 }
 
 module.exports = {
@@ -302,6 +344,6 @@ module.exports = {
   maybeLaunchAndroidEmulator,
   isPackagerRunning,
   launchPackagerInSeparateWindow,
-  setupCircleCIArtifacts,
+  setupGHAArtifacts,
   prepareArtifacts,
 };

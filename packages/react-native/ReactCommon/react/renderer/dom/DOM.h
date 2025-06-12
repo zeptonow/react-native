@@ -11,10 +11,15 @@
 #include <react/renderer/core/ShadowNode.h>
 #include <cstdint>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace facebook::react::dom {
+
+constexpr uint_fast16_t DOCUMENT_POSITION_DISCONNECTED = 1;
+constexpr uint_fast16_t DOCUMENT_POSITION_PRECEDING = 2;
+constexpr uint_fast16_t DOCUMENT_POSITION_FOLLOWING = 4;
+constexpr uint_fast16_t DOCUMENT_POSITION_CONTAINS = 8;
+constexpr uint_fast16_t DOCUMENT_POSITION_CONTAINED_BY = 16;
 
 struct DOMRect {
   double x = 0;

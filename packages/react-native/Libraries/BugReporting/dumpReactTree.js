@@ -4,14 +4,14 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict
+ * @format
  */
 
 'use strict';
 
 /*
-const getReactData = require('getReactData');
+const getReactData = require('getReactData').default;
 
 const INDENTATION_SIZE = 2;
 const MAX_DEPTH = 2;
@@ -148,4 +148,4 @@ function indent(size: number) {
 }
 */
 
-module.exports = dumpReactTree;
+export default dumpReactTree;

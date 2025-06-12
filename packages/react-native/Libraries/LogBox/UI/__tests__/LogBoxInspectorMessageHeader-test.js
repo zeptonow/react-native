@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
@@ -16,9 +15,16 @@ const LogBoxInspectorMessageHeader =
   require('../LogBoxInspectorMessageHeader').default;
 const React = require('react');
 
+// Mock `LogBoxMessage` because we are interested in snapshotting the
+// behavior of `LogBoxInspectorMessageHeader`, not `LogBoxMessage`.
+jest.mock('../LogBoxMessage', () => ({
+  __esModule: true,
+  default: 'LogBoxMessage',
+}));
+
 describe('LogBoxInspectorMessageHeader', () => {
-  it('should render error', () => {
-    const output = render.shallowRender(
+  it('should render error', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Error"
         level="error"
@@ -34,8 +40,8 @@ describe('LogBoxInspectorMessageHeader', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should render fatal', () => {
-    const output = render.shallowRender(
+  it('should render fatal', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Fatal Error"
         level="fatal"
@@ -51,8 +57,8 @@ describe('LogBoxInspectorMessageHeader', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should render syntax error', () => {
-    const output = render.shallowRender(
+  it('should render syntax error', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Syntax Error"
         level="syntax"
@@ -68,8 +74,8 @@ describe('LogBoxInspectorMessageHeader', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should not render See More button for short content', () => {
-    const output = render.shallowRender(
+  it('should not render See More button for short content', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Warning"
         level="warn"
@@ -85,8 +91,8 @@ describe('LogBoxInspectorMessageHeader', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should not render "See More" if expanded', () => {
-    const output = render.shallowRender(
+  it('should not render "See More" if expanded', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Warning"
         level="warn"
@@ -99,8 +105,8 @@ describe('LogBoxInspectorMessageHeader', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('should render "See More" if collapsed', () => {
-    const output = render.shallowRender(
+  it('should render "See More" if collapsed', async () => {
+    const output = await render.create(
       <LogBoxInspectorMessageHeader
         title="Warning"
         level="warn"

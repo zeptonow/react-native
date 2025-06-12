@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {Experiments} from '../types/Experiments';
@@ -21,8 +20,10 @@ export default function getDevToolsFrontendUrl(
   options?: $ReadOnly<{
     relative?: boolean,
     launchId?: string,
+    telemetryInfo?: string,
     /** Whether to use the modern `rn_fusebox.html` entry point. */
     useFuseboxEntryPoint?: boolean,
+    appId?: string,
   }>,
 ): string {
   const wsParam = getWsParam({
@@ -44,14 +45,14 @@ export default function getDevToolsFrontendUrl(
   if (experiments.enableNetworkInspector) {
     searchParams.append('unstable_enableNetworkPanel', 'true');
   }
-  if (
-    options?.useFuseboxEntryPoint === true &&
-    experiments.useFuseboxInternalBranding
-  ) {
-    searchParams.append('unstable_useInternalBranding', 'true');
-  }
   if (options?.launchId != null && options.launchId !== '') {
     searchParams.append('launchId', options.launchId);
+  }
+  if (options?.appId != null && options.appId !== '') {
+    searchParams.append('appId', options.appId);
+  }
+  if (options?.telemetryInfo != null && options.telemetryInfo !== '') {
+    searchParams.append('telemetryInfo', options.telemetryInfo);
   }
 
   return appUrl + '?' + searchParams.toString();
@@ -71,8 +72,12 @@ function getWsParam({
   const serverHost = new URL(devServerUrl).host;
   let value;
   if (wsUrl.host === serverHost) {
-    // Use a path-absolute (host-relative) URL
-    // Depends on https://github.com/facebookexperimental/rn-chrome-devtools-frontend/pull/4
+    // Use a path-absolute (host-relative) URL if the WS server and frontend
+    // server are colocated. This is more robust for cases where the frontend
+    // may actually load through a tunnel or proxy, and the WS connection
+    // should therefore do the same.
+    //
+    // Depends on https://github.com/facebook/react-native-devtools-frontend/pull/4
     value = wsUrl.pathname + wsUrl.search + wsUrl.hash;
   } else {
     // Standard URL format accepted by the DevTools frontend

@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {
@@ -20,16 +19,24 @@ import type {
   WrappedEvent,
 } from '../inspector-proxy/types';
 
+import nullthrows from 'nullthrows';
 import WebSocket from 'ws';
 
 export class DeviceAgent {
   #ws: ?WebSocket;
   #readyPromise: Promise<void>;
 
-  constructor(url: string, signal?: AbortSignal) {
+  constructor(url: string, signal?: AbortSignal, host?: ?string) {
     const ws = new WebSocket(url, {
       // The mock server uses a self-signed certificate.
       rejectUnauthorized: false,
+      ...(host != null
+        ? {
+            headers: {
+              Host: host,
+            },
+          }
+        : {}),
     });
     this.#ws = ws;
     ws.on('message', data => {
@@ -81,6 +88,11 @@ export class DeviceAgent {
         wrappedEvent: JSON.stringify(event),
       },
     });
+  }
+
+  // $FlowIgnore[unsafe-getters-setters]
+  get socket(): WebSocket {
+    return nullthrows(this.#ws);
   }
 }
 
@@ -136,7 +148,6 @@ export class DeviceMock extends DeviceAgent {
       return;
     }
     if (maybePayload instanceof Promise) {
-      // eslint-disable-next-line no-void
       void maybePayload.then(payload => {
         if (!payload) {
           return;
@@ -154,8 +165,9 @@ export class DeviceMock extends DeviceAgent {
 export async function createDeviceMock(
   url: string,
   signal: AbortSignal,
+  host?: ?string,
 ): Promise<DeviceMock> {
-  const device = new DeviceMock(url, signal);
+  const device = new DeviceMock(url, signal, host);
   await device.ready();
   return device;
 }

@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {JSONSerializable} from '../inspector-proxy/types';
@@ -23,10 +22,11 @@ export class DebuggerAgent {
   #ws: ?WebSocket;
   #readyPromise: Promise<void>;
 
-  constructor(url: string, signal?: AbortSignal) {
+  constructor(url: string, signal?: AbortSignal, hostHeader?: ?string) {
     const ws = new WebSocket(url, {
       // The mock server uses a self-signed certificate.
       rejectUnauthorized: false,
+      ...(hostHeader != null ? {headers: {Host: hostHeader}} : {}),
     });
     this.#ws = ws;
     ws.on('message', data => {
@@ -115,8 +115,9 @@ export class DebuggerMock extends DebuggerAgent {
 export async function createDebuggerMock(
   url: string,
   signal: AbortSignal,
+  hostHeader?: ?string,
 ): Promise<DebuggerMock> {
-  const debuggerMock = new DebuggerMock(url, signal);
+  const debuggerMock = new DebuggerMock(url, signal, hostHeader);
   await debuggerMock.ready();
   return debuggerMock;
 }

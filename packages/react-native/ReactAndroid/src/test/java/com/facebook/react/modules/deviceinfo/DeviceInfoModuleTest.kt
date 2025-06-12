@@ -12,6 +12,7 @@ import com.facebook.react.bridge.JavaOnlyMap
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.ReactTestHelper
 import com.facebook.react.bridge.WritableMap
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlagsForTests
 import com.facebook.react.uimanager.DisplayMetricsHolder
 import junit.framework.TestCase
 import org.assertj.core.api.Assertions
@@ -22,7 +23,10 @@ import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers
 import org.mockito.MockedStatic
-import org.mockito.Mockito.*
+import org.mockito.Mockito.mockStatic
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
@@ -37,6 +41,7 @@ class DeviceInfoModuleTest : TestCase() {
 
   @Before
   public override fun setUp() {
+    ReactNativeFeatureFlagsForTests.setUp()
     fakePortraitDisplayMetrics = JavaOnlyMap()
     fakePortraitDisplayMetrics.putInt("width", 100)
     fakePortraitDisplayMetrics.putInt("height", 200)

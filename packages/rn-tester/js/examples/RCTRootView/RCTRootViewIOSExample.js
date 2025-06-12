@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 'use strict';
@@ -85,13 +85,13 @@ exports.description =
 exports.examples = [
   {
     title: 'Updating app properties in runtime',
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <AppPropertiesUpdateExample />;
     },
   },
   {
     title: "RCTRootView's size flexibility",
-    render(): React.Element<any> {
+    render(): React.MixedElement {
       return <RootViewSizeFlexibilityExample />;
     },
   },

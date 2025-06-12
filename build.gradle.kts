@@ -12,6 +12,7 @@ plugins {
   alias(libs.plugins.download) apply false
   alias(libs.plugins.kotlin.android) apply false
   alias(libs.plugins.binary.compatibility.validator) apply true
+  alias(libs.plugins.android.test) apply false
 }
 
 val reactAndroidProperties = java.util.Properties()
@@ -60,7 +61,7 @@ nexusPublishing {
 
 tasks.register("clean", Delete::class.java) {
   description = "Remove all the build files and intermediate build outputs"
-  dependsOn(gradle.includedBuild("react-native-gradle-plugin").task(":clean"))
+  dependsOn(gradle.includedBuild("gradle-plugin").task(":clean"))
   subprojects.forEach {
     if (it.project.plugins.hasPlugin("com.android.library") ||
         it.project.plugins.hasPlugin("com.android.application")) {
@@ -86,21 +87,20 @@ tasks.register("clean", Delete::class.java) {
 
 tasks.register("build") {
   description = "Build and test all the React Native relevant projects."
-  dependsOn(gradle.includedBuild("react-native-gradle-plugin").task(":build"))
+  dependsOn(gradle.includedBuild("gradle-plugin").task(":build"))
 }
 
 tasks.register("publishAllToMavenTempLocal") {
   description = "Publish all the artifacts to be available inside a Maven Local repository on /tmp."
   dependsOn(":packages:react-native:ReactAndroid:publishAllPublicationsToMavenTempLocalRepository")
-  // We don't publish the external-artifacts to Maven Local as CircleCI is using it via workspace.
+  // We don't publish the external-artifacts to Maven Local as ci is using it via workspace.
   dependsOn(
       ":packages:react-native:ReactAndroid:hermes-engine:publishAllPublicationsToMavenTempLocalRepository")
 }
 
-tasks.register("publishAllToSonatype") {
-  description = "Publish all the artifacts to Sonatype (Maven Central or Snapshot repository)"
+tasks.register("publishAndroidToSonatype") {
+  description = "Publish the Android artifacts to Sonatype (Maven Central or Snapshot repository)"
   dependsOn(":packages:react-native:ReactAndroid:publishToSonatype")
-  dependsOn(":packages:react-native:ReactAndroid:external-artifacts:publishToSonatype")
   dependsOn(":packages:react-native:ReactAndroid:hermes-engine:publishToSonatype")
 }
 

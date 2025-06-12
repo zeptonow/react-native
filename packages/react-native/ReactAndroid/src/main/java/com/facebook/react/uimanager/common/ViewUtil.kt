@@ -7,6 +7,8 @@
 
 package com.facebook.react.uimanager.common
 
+import android.view.View
+
 public object ViewUtil {
 
   public const val NO_SURFACE_ID: Int = -1
@@ -23,8 +25,14 @@ public object ViewUtil {
       if (viewTag % 2 == 0) {
         UIManagerType.FABRIC
       } else {
-        UIManagerType.DEFAULT
+        UIManagerType.LEGACY
       }
+
+  /**
+   * Overload for [getUIManagerType] that uses the view's id to determine if it originated from
+   * Fabric
+   */
+  @JvmStatic @UIManagerType public fun getUIManagerType(view: View): Int = getUIManagerType(view.id)
 
   /**
    * Version of getUIManagerType that uses both surfaceId and viewTag heuristics
@@ -47,8 +55,8 @@ public object ViewUtil {
     // by RN and is essentially a random number.
     // At some point it would be great to pass the SurfaceContext here instead.
     @UIManagerType
-    val uiManagerType = if (surfaceId == -1) UIManagerType.DEFAULT else UIManagerType.FABRIC
-    if (uiManagerType == UIManagerType.DEFAULT && !isRootTag(viewTag)) {
+    val uiManagerType = if (surfaceId == -1) UIManagerType.LEGACY else UIManagerType.FABRIC
+    if (uiManagerType == UIManagerType.LEGACY && !isRootTag(viewTag)) {
       // TODO (T123064648): Some events for Fabric still didn't have the surfaceId set, so if it's
       // not a React RootView, double check if the tag belongs to Fabric.
       if (viewTag % 2 == 0) {

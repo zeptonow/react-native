@@ -4,8 +4,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 'use strict';
@@ -24,7 +24,7 @@ import {
 
 const Drawer = () => {
   const theme = useContext(RNTesterThemeContext);
-  const drawer = useRef<null | React$ElementRef<any>>(null);
+  const drawer = useRef<null | any>(null);
   const [drawerPosition, setDrawerPosition] = useState('left');
   const changeDrawerPosition = () => {
     if (drawerPosition === 'left') {
@@ -51,6 +51,8 @@ const Drawer = () => {
       ref={drawer}
       accessibilityRole="drawerlayout"
       drawerWidth={300}
+      /* $FlowFixMe[incompatible-type] Natural Inference rollout. See
+       * https://fburl.com/workplace/6291gfvu */
       drawerPosition={drawerPosition}
       renderNavigationView={navigationView}>
       <View style={styles.container}>

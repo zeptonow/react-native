@@ -12,7 +12,12 @@ import {Insets} from '../../../types/public/Insets';
 import {GestureResponderHandlers} from '../../../types/public/ReactNativeRenderer';
 import {StyleProp} from '../../StyleSheet/StyleSheet';
 import {ViewStyle} from '../../StyleSheet/StyleSheetTypes';
-import {LayoutChangeEvent, PointerEvents} from '../../Types/CoreEventTypes';
+import {
+  BlurEvent,
+  FocusEvent,
+  LayoutChangeEvent,
+  PointerEvents,
+} from '../../Types/CoreEventTypes';
 import {Touchable} from '../Touchable/Touchable';
 import {AccessibilityProps} from './ViewAccessibility';
 
@@ -77,18 +82,18 @@ export interface ViewPropsIOS extends TVViewPropsIOS {
 
 export interface ViewPropsAndroid {
   /**
-   * Views that are only used to layout their children or otherwise don't draw anything
-   * may be automatically removed from the native hierarchy as an optimization.
-   * Set this property to false to disable this optimization and ensure that this View exists in the native view hierarchy.
+   * Callback that is called when the view is blurred.
+   *
+   * Note: This will only be called if the view is focusable.
    */
-  collapsable?: boolean | undefined;
+  onBlur?: ((e: BlurEvent) => void) | null | undefined;
 
   /**
-   * Setting to false prevents direct children of the view from being removed
-   * from the native view hierarchy, similar to the effect of setting
-   * `collapsable={false}` on each child.
+   * Callback that is called when the view is focused.
+   *
+   * Note: This will only be called if the view is focusable.
    */
-  collapsableChildren?: boolean | undefined;
+  onFocus?: ((e: FocusEvent) => void) | null | undefined;
 
   /**
    * Whether this view should render itself (and all of its children) into a single hardware texture on the GPU.
@@ -211,4 +216,18 @@ export interface ViewProps
    * Used to reference react managed views from native code.
    */
   nativeID?: string | undefined;
+
+  /**
+   * Views that are only used to layout their children or otherwise don't draw anything
+   * may be automatically removed from the native hierarchy as an optimization.
+   * Set this property to false to disable this optimization and ensure that this View exists in the native view hierarchy.
+   */
+  collapsable?: boolean | undefined;
+
+  /**
+   * Setting to false prevents direct children of the view from being removed
+   * from the native view hierarchy, similar to the effect of setting
+   * `collapsable={false}` on each child.
+   */
+  collapsableChildren?: boolean | undefined;
 }

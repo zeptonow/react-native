@@ -10,9 +10,18 @@ package com.facebook.react.jscexecutor
 import com.facebook.react.bridge.JavaScriptExecutor
 import com.facebook.react.bridge.JavaScriptExecutorFactory
 import com.facebook.react.bridge.WritableNativeMap
+import com.facebook.react.common.annotations.internal.LegacyArchitecture
+import com.facebook.react.common.annotations.internal.LegacyArchitectureLogLevel
+import com.facebook.react.common.annotations.internal.LegacyArchitectureLogger
 
+@LegacyArchitecture(logLevel = LegacyArchitectureLogLevel.ERROR)
 public class JSCExecutorFactory(private val appName: String, private val deviceName: String) :
     JavaScriptExecutorFactory {
+
+  init {
+    LegacyArchitectureLogger.assertLegacyArchitecture(
+        "JSCExecutorFactory", LegacyArchitectureLogLevel.ERROR)
+  }
 
   @Throws(Exception::class)
   override fun create(): JavaScriptExecutor {

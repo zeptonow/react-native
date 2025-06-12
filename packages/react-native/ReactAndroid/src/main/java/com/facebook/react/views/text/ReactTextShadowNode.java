@@ -18,12 +18,15 @@ import android.view.Gravity;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
 import com.facebook.infer.annotation.Assertions;
+import com.facebook.infer.annotation.Nullsafe;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactNoCrashSoftException;
 import com.facebook.react.bridge.ReactSoftExceptionLogger;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.ReactConstants;
+import com.facebook.react.common.annotations.internal.LegacyArchitecture;
+import com.facebook.react.common.annotations.internal.LegacyArchitectureLogLevel;
 import com.facebook.react.uimanager.NativeViewHierarchyOptimizer;
 import com.facebook.react.uimanager.PixelUtil;
 import com.facebook.react.uimanager.ReactShadowNode;
@@ -49,6 +52,8 @@ import java.util.ArrayList;
  * <p>The class measures text in {@code <Text>} view and feeds native {@link TextView} using {@code
  * Spannable} object constructed in superclass.
  */
+@LegacyArchitecture(logLevel = LegacyArchitectureLogLevel.ERROR)
+@Nullsafe(Nullsafe.Mode.LOCAL)
 public class ReactTextShadowNode extends ReactBaseTextShadowNode {
 
   // It's important to pass the ANTI_ALIAS_FLAG flag to the constructor rather than setting it
@@ -108,9 +113,7 @@ public class ReactTextShadowNode extends ReactBaseTextShadowNode {
 
           if (mShouldNotifyOnTextLayout) {
             ThemedReactContext themedReactContext = getThemedContext();
-            WritableArray lines =
-                FontMetricsUtil.getFontMetrics(
-                    text, layout, sTextPaintInstance, themedReactContext);
+            WritableArray lines = FontMetricsUtil.getFontMetrics(text, layout, themedReactContext);
             WritableMap event = Arguments.createMap();
             event.putArray("lines", lines);
             if (themedReactContext.hasActiveReactInstance()) {
@@ -270,6 +273,10 @@ public class ReactTextShadowNode extends ReactBaseTextShadowNode {
               .setBreakStrategy(mTextBreakStrategy)
               .setHyphenationFrequency(mHyphenationFrequency);
 
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        builder.setJustificationMode(mJustificationMode);
+      }
+
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         builder.setUseLineSpacingFromFallbacks(true);
       }
@@ -349,8 +356,7 @@ public class ReactTextShadowNode extends ReactBaseTextShadowNode {
   }
 
   @Override
-  @Nullable
-  public Iterable<? extends ReactShadowNode> calculateLayoutOnChildren() {
+  public @Nullable Iterable<? extends ReactShadowNode> calculateLayoutOnChildren() {
     // Run flexbox on and return the descendants which are inline views.
 
     if (mInlineViews == null || mInlineViews.isEmpty()) {
@@ -366,6 +372,7 @@ public class ReactTextShadowNode extends ReactBaseTextShadowNode {
 
     for (TextInlineViewPlaceholderSpan placeholder : placeholders) {
       ReactShadowNode child = mInlineViews.get(placeholder.getReactTag());
+      Assertions.assertNotNull(child);
       child.calculateLayout();
       shadowNodes.add(child);
     }

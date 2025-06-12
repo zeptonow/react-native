@@ -21,7 +21,8 @@ export default function (definitions: FeatureFlagDefinitions): string {
  * LICENSE file in the root directory of this source tree.
  *
  * ${signedsource.getSigningToken()}
- * @flow strict-local
+ * @flow strict
+ * @noformat
  */
 
 ${DO_NOT_MODIFY_COMMENT}

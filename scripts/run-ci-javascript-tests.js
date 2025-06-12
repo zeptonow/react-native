@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
+ * @noflow
  */
 
 'use strict';
@@ -24,6 +25,7 @@ const numberOfMaxWorkers = argv.maxWorkers || 1;
 let exitCode;
 
 const JEST_BINARY = argv.jestBinary || './node_modules/.bin/jest';
+const FLOW_BINARY = argv.flowBinary;
 const YARN_BINARY = argv.yarnBinary || 'yarn';
 
 function describe(message) {
@@ -34,7 +36,7 @@ try {
   echo('Executing JavaScript tests');
 
   describe('Test: feature flags codegen');
-  if (exec(`${YARN_BINARY} run featureflags-check`).code) {
+  if (exec(`${YARN_BINARY} run featureflags --verify-unchanged`).code) {
     echo('Failed to run featureflags check.');
     exitCode = 1;
     throw Error(exitCode);
@@ -47,8 +49,19 @@ try {
     throw Error(exitCode);
   }
 
+  describe('Test: No JS build artifacts');
+  if (exec(`${YARN_BINARY} run build --validate`).code) {
+    echo('Failed, there are build artifacts in this commit.');
+    exitCode = 1;
+    throw Error(exitCode);
+  }
+
   describe('Test: Flow check');
-  if (exec(`${YARN_BINARY} run flow-check`).code) {
+  const flowCommand =
+    FLOW_BINARY == null
+      ? `${YARN_BINARY} run flow-check`
+      : `${FLOW_BINARY} check`;
+  if (exec(flowCommand).code) {
     echo('Failed to run flow.');
     exitCode = 1;
     throw Error(exitCode);
@@ -73,7 +86,7 @@ try {
   describe('Test: Build @react-native/codegen-typescript-test');
   if (
     exec(
-      `${YARN_BINARY} --cwd ./packages/react-native-codegen-typescript-test run build`,
+      `${YARN_BINARY} --cwd ./private/react-native-codegen-typescript-test run build`,
     ).code
   ) {
     echo('Failed to build @react-native/codegen-typescript-test.');
@@ -96,7 +109,7 @@ try {
   }
 
   describe('Test: TypeScript tests');
-  if (exec(`${YARN_BINARY} run test-typescript-offline`).code) {
+  if (exec(`${YARN_BINARY} run test-typescript`).code) {
     echo('Failed to run TypeScript tests.');
     exitCode = 1;
     throw Error(exitCode);

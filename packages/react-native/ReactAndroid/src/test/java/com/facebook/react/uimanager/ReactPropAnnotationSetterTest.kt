@@ -13,6 +13,7 @@ import com.facebook.react.bridge.JavaOnlyArray
 import com.facebook.react.bridge.JavaOnlyMap
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlagsForTests
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.uimanager.annotations.ReactPropGroup
 import org.junit.Before
@@ -64,6 +65,10 @@ class ReactPropAnnotationSetterTest {
 
     override fun createViewInstance(reactContext: ThemedReactContext): View =
         error("This method should not be executed as a part of this test")
+
+    override fun prepareToRecycleView(reactContext: ThemedReactContext, view: View): View? {
+      error("This method should not be executed as a part of this test")
+    }
 
     override fun updateExtraData(root: View, extraData: Any) =
         error("This method should not be executed as a part of this test")
@@ -168,6 +173,7 @@ class ReactPropAnnotationSetterTest {
 
   @Before
   fun setup() {
+    ReactNativeFeatureFlagsForTests.setUp()
     updatesReceiverMock = Mockito.mock(ViewManagerUpdatesReceiver::class.java)
     viewManager = ViewManagerUnderTest(updatesReceiverMock)
     targetView = View(RuntimeEnvironment.getApplication())

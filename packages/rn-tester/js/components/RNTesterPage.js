@@ -4,22 +4,22 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow
+ * @format
  */
 
 import {RNTesterThemeContext} from './RNTesterTheme';
+import RNTesterTitle from './RNTesterTitle';
 import {useContext} from 'react';
 
-const RNTesterTitle = require('./RNTesterTitle');
 const React = require('react');
 const {SafeAreaView, ScrollView, StyleSheet, View} = require('react-native');
 
-type Props = $ReadOnly<{|
+type Props = $ReadOnly<{
   children?: React.Node,
   title?: ?string,
   noScroll?: ?boolean,
-|}>;
+}>;
 
 function RNTesterPage({children, title, noScroll}: Props): React.Node {
   const theme = useContext(RNTesterThemeContext);

@@ -8,8 +8,11 @@
  * @format
  */
 
-import type {PressEvent} from '../Types/CoreEventTypes';
-import type {TextProps} from './TextProps';
+import type {TextStyleProp} from '../StyleSheet/StyleSheet';
+import type {____TextStyle_Internal as TextStyleInternal} from '../StyleSheet/StyleSheetTypes';
+import type {GestureResponderEvent} from '../Types/CoreEventTypes';
+import type {NativeTextProps} from './TextNativeComponent';
+import type {PressRetentionOffset, TextProps} from './TextProps';
 
 import * as PressabilityDebug from '../Pressability/PressabilityDebug';
 import usePressability from '../Pressability/usePressability';
@@ -21,46 +24,58 @@ import {NativeText, NativeVirtualText} from './TextNativeComponent';
 import * as React from 'react';
 import {useContext, useMemo, useState} from 'react';
 
+export type {TextProps} from './TextProps';
+
+type TextForwardRef = React.ElementRef<
+  typeof NativeText | typeof NativeVirtualText,
+>;
+
 /**
  * Text is the fundamental component for displaying text.
  *
  * @see https://reactnative.dev/docs/text
  */
-const Text: React.AbstractComponent<
-  TextProps,
-  React.ElementRef<typeof NativeText | typeof NativeVirtualText>,
-> = React.forwardRef((props: TextProps, forwardedRef) => {
-  const {
-    accessible,
-    accessibilityLabel,
-    accessibilityState,
-    allowFontScaling,
-    'aria-busy': ariaBusy,
-    'aria-checked': ariaChecked,
-    'aria-disabled': ariaDisabled,
-    'aria-expanded': ariaExpanded,
-    'aria-label': ariaLabel,
-    'aria-selected': ariaSelected,
-    ellipsizeMode,
-    id,
-    nativeID,
-    onLongPress,
-    onPress,
-    onPressIn,
-    onPressOut,
-    onResponderGrant,
-    onResponderMove,
-    onResponderRelease,
-    onResponderTerminate,
-    onResponderTerminationRequest,
-    onStartShouldSetResponder,
-    pressRetentionOffset,
-    suppressHighlighting,
-    ...restProps
-  } = props;
-
-  const [isHighlighted, setHighlighted] = useState(false);
-
+const TextImpl: component(
+  ref?: React.RefSetter<TextForwardRef>,
+  ...props: TextProps
+) = ({
+  ref: forwardedRef,
+  accessible,
+  accessibilityLabel,
+  accessibilityState,
+  allowFontScaling,
+  'aria-busy': ariaBusy,
+  'aria-checked': ariaChecked,
+  'aria-disabled': ariaDisabled,
+  'aria-expanded': ariaExpanded,
+  'aria-label': ariaLabel,
+  'aria-selected': ariaSelected,
+  children,
+  ellipsizeMode,
+  disabled,
+  id,
+  nativeID,
+  numberOfLines,
+  onLongPress,
+  onPress,
+  onPressIn,
+  onPressOut,
+  onResponderGrant,
+  onResponderMove,
+  onResponderRelease,
+  onResponderTerminate,
+  onResponderTerminationRequest,
+  onStartShouldSetResponder,
+  pressRetentionOffset,
+  selectable,
+  selectionColor,
+  suppressHighlighting,
+  style,
+  ...restProps
+}: {
+  ref?: React.RefSetter<TextForwardRef>,
+  ...TextProps,
+}) => {
   const _accessibilityLabel = ariaLabel ?? accessibilityLabel;
 
   let _accessibilityState: ?TextProps['accessibilityState'] =
@@ -92,7 +107,7 @@ const Text: React.AbstractComponent<
   }
 
   const _accessibilityStateDisabled = _accessibilityState?.disabled;
-  const _disabled = restProps.disabled ?? _accessibilityStateDisabled;
+  const _disabled = disabled ?? _accessibilityStateDisabled;
 
   const isPressable =
     (onPress != null ||
@@ -100,12 +115,258 @@ const Text: React.AbstractComponent<
       onStartShouldSetResponder != null) &&
     _disabled !== true;
 
-  const initialized = useLazyInitialization(isPressable);
-  const config = useMemo(() => {
-    if (!initialized) {
-      return null;
+  // TODO: Move this processing to the view configuration.
+  const _selectionColor =
+    selectionColor != null ? processColor(selectionColor) : undefined;
+
+  let _style = style;
+  if (__DEV__) {
+    if (PressabilityDebug.isEnabled() && onPress != null) {
+      _style = [style, {color: 'magenta'}];
+    }
+  }
+
+  let _numberOfLines = numberOfLines;
+  if (_numberOfLines != null && !(_numberOfLines >= 0)) {
+    if (__DEV__) {
+      console.error(
+        `'numberOfLines' in <Text> must be a non-negative number, received: ${_numberOfLines}. The value will be set to 0.`,
+      );
+    }
+    _numberOfLines = 0;
+  }
+
+  let _selectable = selectable;
+
+  let processedStyle = flattenStyle<TextStyleProp>(_style);
+  if (processedStyle != null) {
+    let overrides: ?{...TextStyleInternal} = null;
+    if (typeof processedStyle.fontWeight === 'number') {
+      overrides = overrides || ({}: {...TextStyleInternal});
+      overrides.fontWeight =
+        // $FlowFixMe[incompatible-cast]
+        (processedStyle.fontWeight.toString(): TextStyleInternal['fontWeight']);
     }
 
+    if (processedStyle.userSelect != null) {
+      _selectable = userSelectToSelectableMap[processedStyle.userSelect];
+      overrides = overrides || ({}: {...TextStyleInternal});
+      overrides.userSelect = undefined;
+    }
+
+    if (processedStyle.verticalAlign != null) {
+      overrides = overrides || ({}: {...TextStyleInternal});
+      overrides.textAlignVertical =
+        verticalAlignToTextAlignVerticalMap[processedStyle.verticalAlign];
+      overrides.verticalAlign = undefined;
+    }
+
+    if (overrides != null) {
+      // $FlowFixMe[incompatible-type]
+      _style = [_style, overrides];
+    }
+  }
+
+  const _nativeID = id ?? nativeID;
+
+  const hasTextAncestor = useContext(TextAncestor);
+  if (hasTextAncestor) {
+    if (isPressable) {
+      return (
+        <NativePressableVirtualText
+          ref={forwardedRef}
+          textProps={{
+            ...restProps,
+            accessibilityLabel: _accessibilityLabel,
+            accessibilityState: _accessibilityState,
+            nativeID: _nativeID,
+            numberOfLines: _numberOfLines,
+            selectable: _selectable,
+            selectionColor: _selectionColor,
+            style: _style,
+            disabled: disabled,
+            children,
+          }}
+          textPressabilityProps={{
+            onLongPress,
+            onPress,
+            onPressIn,
+            onPressOut,
+            onResponderGrant,
+            onResponderMove,
+            onResponderRelease,
+            onResponderTerminate,
+            onResponderTerminationRequest,
+            onStartShouldSetResponder,
+            pressRetentionOffset,
+            suppressHighlighting,
+          }}
+        />
+      );
+    }
+
+    return (
+      <NativeVirtualText
+        {...restProps}
+        accessibilityLabel={_accessibilityLabel}
+        accessibilityState={_accessibilityState}
+        nativeID={_nativeID}
+        numberOfLines={_numberOfLines}
+        ref={forwardedRef}
+        selectable={_selectable}
+        selectionColor={_selectionColor}
+        style={_style}
+        disabled={disabled}>
+        {children}
+      </NativeVirtualText>
+    );
+  }
+
+  // If the disabled prop and accessibilityState.disabled are out of sync but not both in
+  // falsy states we need to update the accessibilityState object to use the disabled prop.
+  if (
+    _disabled !== _accessibilityStateDisabled &&
+    ((_disabled != null && _disabled !== false) ||
+      (_accessibilityStateDisabled != null &&
+        _accessibilityStateDisabled !== false))
+  ) {
+    _accessibilityState = {..._accessibilityState, disabled: _disabled};
+  }
+
+  const _accessible = Platform.select({
+    ios: accessible !== false,
+    android:
+      accessible == null ? onPress != null || onLongPress != null : accessible,
+    default: accessible,
+  });
+
+  let nativeText = null;
+  if (isPressable) {
+    nativeText = (
+      <NativePressableText
+        ref={forwardedRef}
+        textProps={{
+          ...restProps,
+          accessibilityLabel: _accessibilityLabel,
+          accessibilityState: _accessibilityState,
+          accessible: _accessible,
+          allowFontScaling: allowFontScaling !== false,
+          disabled: _disabled,
+          ellipsizeMode: ellipsizeMode ?? 'tail',
+          nativeID: _nativeID,
+          numberOfLines: _numberOfLines,
+          selectable: _selectable,
+          selectionColor: _selectionColor,
+          style: _style,
+          children,
+        }}
+        textPressabilityProps={{
+          onLongPress,
+          onPress,
+          onPressIn,
+          onPressOut,
+          onResponderGrant,
+          onResponderMove,
+          onResponderRelease,
+          onResponderTerminate,
+          onResponderTerminationRequest,
+          onStartShouldSetResponder,
+          pressRetentionOffset,
+          suppressHighlighting,
+        }}
+      />
+    );
+  } else {
+    nativeText = (
+      <NativeText
+        {...restProps}
+        accessibilityLabel={_accessibilityLabel}
+        accessibilityState={_accessibilityState}
+        accessible={_accessible}
+        allowFontScaling={allowFontScaling !== false}
+        disabled={_disabled}
+        ellipsizeMode={ellipsizeMode ?? 'tail'}
+        nativeID={_nativeID}
+        numberOfLines={_numberOfLines}
+        ref={forwardedRef}
+        selectable={_selectable}
+        selectionColor={_selectionColor}
+        style={_style}>
+        {children}
+      </NativeText>
+    );
+  }
+
+  if (children == null) {
+    return nativeText;
+  }
+
+  // If the children do not contain a JSX element it would not be possible to have a
+  // nested `Text` component so we can skip adding the `TextAncestor` context wrapper
+  // which has a performance overhead. Since we do this for performance reasons we need
+  // to keep the check simple to avoid regressing overall perf. For this reason the
+  // `children.length` constant is set to `3`, this should be a reasonable tradeoff
+  // to capture the majority of `Text` uses but also not make this check too expensive.
+  if (Array.isArray(children) && children.length <= 3) {
+    let hasNonTextChild = false;
+    for (let child of children) {
+      if (child != null && typeof child === 'object') {
+        hasNonTextChild = true;
+        break;
+      }
+    }
+    if (!hasNonTextChild) {
+      return nativeText;
+    }
+  } else if (typeof children !== 'object') {
+    return nativeText;
+  }
+
+  return (
+    <TextAncestor.Provider value={true}>{nativeText}</TextAncestor.Provider>
+  );
+};
+
+TextImpl.displayName = 'Text';
+
+type TextPressabilityProps = $ReadOnly<{
+  onLongPress?: ?(event: GestureResponderEvent) => mixed,
+  onPress?: ?(event: GestureResponderEvent) => mixed,
+  onPressIn?: ?(event: GestureResponderEvent) => mixed,
+  onPressOut?: ?(event: GestureResponderEvent) => mixed,
+  onResponderGrant?: ?(event: GestureResponderEvent) => void,
+  onResponderMove?: ?(event: GestureResponderEvent) => void,
+  onResponderRelease?: ?(event: GestureResponderEvent) => void,
+  onResponderTerminate?: ?(event: GestureResponderEvent) => void,
+  onResponderTerminationRequest?: ?() => boolean,
+  onStartShouldSetResponder?: ?() => boolean,
+  pressRetentionOffset?: ?PressRetentionOffset,
+  suppressHighlighting?: ?boolean,
+}>;
+
+/**
+ * Hook that handles setting up Pressability of Text components.
+ *
+ * NOTE: This hook is relatively expensive so it should only be used absolutely necessary.
+ */
+function useTextPressability({
+  onLongPress,
+  onPress,
+  onPressIn,
+  onPressOut,
+  onResponderGrant,
+  onResponderMove,
+  onResponderRelease,
+  onResponderTerminate,
+  onResponderTerminationRequest,
+  onStartShouldSetResponder,
+  pressRetentionOffset,
+  suppressHighlighting,
+}: TextPressabilityProps) {
+  const [isHighlighted, setHighlighted] = useState(false);
+
+  // Setup pressability config and wrap callbacks needs to track the highlight state.
+  const config = useMemo(() => {
     let _onPressIn = onPressIn;
     let _onPressOut = onPressOut;
 
@@ -113,19 +374,19 @@ const Text: React.AbstractComponent<
     // in the best case, and cause issues with text selection in the worst case. Forcing
     // the isHighlighted prop to false on all platforms except iOS.
     if (Platform.OS === 'ios') {
-      _onPressIn = (event: PressEvent) => {
+      _onPressIn = (event: GestureResponderEvent) => {
         setHighlighted(suppressHighlighting == null || !suppressHighlighting);
         onPressIn?.(event);
       };
 
-      _onPressOut = (event: PressEvent) => {
+      _onPressOut = (event: GestureResponderEvent) => {
         setHighlighted(false);
         onPressOut?.(event);
       };
     }
 
     return {
-      disabled: !isPressable,
+      disabled: false,
       pressRectOffset: pressRetentionOffset,
       onLongPress,
       onPress,
@@ -133,8 +394,6 @@ const Text: React.AbstractComponent<
       onPressOut: _onPressOut,
     };
   }, [
-    initialized,
-    isPressable,
     pressRetentionOffset,
     onLongPress,
     onPress,
@@ -143,31 +402,34 @@ const Text: React.AbstractComponent<
     suppressHighlighting,
   ]);
 
+  // Init the pressability class
   const eventHandlers = usePressability(config);
+
+  // Create NativeText event handlers which proxy events to pressability
   const eventHandlersForText = useMemo(
     () =>
       eventHandlers == null
         ? null
         : {
-            onResponderGrant(event: PressEvent) {
+            onResponderGrant(event: GestureResponderEvent) {
               eventHandlers.onResponderGrant(event);
               if (onResponderGrant != null) {
                 onResponderGrant(event);
               }
             },
-            onResponderMove(event: PressEvent) {
+            onResponderMove(event: GestureResponderEvent) {
               eventHandlers.onResponderMove(event);
               if (onResponderMove != null) {
                 onResponderMove(event);
               }
             },
-            onResponderRelease(event: PressEvent) {
+            onResponderRelease(event: GestureResponderEvent) {
               eventHandlers.onResponderRelease(event);
               if (onResponderRelease != null) {
                 onResponderRelease(event);
               }
             },
-            onResponderTerminate(event: PressEvent) {
+            onResponderTerminate(event: GestureResponderEvent) {
               eventHandlers.onResponderTerminate(event);
               if (onResponderTerminate != null) {
                 onResponderTerminate(event);
@@ -194,128 +456,81 @@ const Text: React.AbstractComponent<
     ],
   );
 
-  // TODO: Move this processing to the view configuration.
-  const selectionColor =
-    restProps.selectionColor == null
-      ? null
-      : processColor(restProps.selectionColor);
-
-  let style = restProps.style;
-  if (__DEV__) {
-    if (PressabilityDebug.isEnabled() && onPress != null) {
-      style = [restProps.style, {color: 'magenta'}];
-    }
-  }
-
-  let numberOfLines = restProps.numberOfLines;
-  if (numberOfLines != null && !(numberOfLines >= 0)) {
-    console.error(
-      `'numberOfLines' in <Text> must be a non-negative number, received: ${numberOfLines}. The value will be set to 0.`,
-    );
-    numberOfLines = 0;
-  }
-
-  let _selectable = restProps.selectable;
-
-  const processedStyle = flattenStyle(style);
-  if (processedStyle != null) {
-    if (typeof processedStyle.fontWeight === 'number') {
-      // $FlowFixMe[cannot-write]
-      processedStyle.fontWeight = processedStyle.fontWeight.toString();
-    }
-
-    if (processedStyle.userSelect != null) {
-      _selectable = userSelectToSelectableMap[processedStyle.userSelect];
-      // $FlowFixMe[cannot-write]
-      delete processedStyle.userSelect;
-    }
-
-    if (processedStyle.verticalAlign != null) {
-      // $FlowFixMe[cannot-write]
-      processedStyle.textAlignVertical =
-        verticalAlignToTextAlignVerticalMap[processedStyle.verticalAlign];
-      // $FlowFixMe[cannot-write]
-      delete processedStyle.verticalAlign;
-    }
-  }
-
-  const _nativeID = id ?? nativeID;
-
-  const hasTextAncestor = useContext(TextAncestor);
-  if (hasTextAncestor) {
-    return (
-      <NativeVirtualText
-        {...restProps}
-        {...eventHandlersForText}
-        accessibilityLabel={_accessibilityLabel}
-        accessibilityState={_accessibilityState}
-        isHighlighted={isHighlighted}
-        isPressable={isPressable}
-        nativeID={_nativeID}
-        numberOfLines={numberOfLines}
-        ref={forwardedRef}
-        selectable={_selectable}
-        selectionColor={selectionColor}
-        style={processedStyle}
-      />
-    );
-  }
-
-  // If the disabled prop and accessibilityState.disabled are out of sync but not both in
-  // falsy states we need to update the accessibilityState object to use the disabled prop.
-  if (
-    _disabled !== _accessibilityStateDisabled &&
-    ((_disabled != null && _disabled !== false) ||
-      (_accessibilityStateDisabled != null &&
-        _accessibilityStateDisabled !== false))
-  ) {
-    _accessibilityState = {..._accessibilityState, disabled: _disabled};
-  }
-
-  const _accessible = Platform.select({
-    ios: accessible !== false,
-    android:
-      accessible == null ? onPress != null || onLongPress != null : accessible,
-    default: accessible,
-  });
-
-  return (
-    <TextAncestor.Provider value={true}>
-      <NativeText
-        {...restProps}
-        {...eventHandlersForText}
-        accessibilityLabel={_accessibilityLabel}
-        accessibilityState={_accessibilityState}
-        accessible={_accessible}
-        allowFontScaling={allowFontScaling !== false}
-        disabled={_disabled}
-        ellipsizeMode={ellipsizeMode ?? 'tail'}
-        isHighlighted={isHighlighted}
-        nativeID={_nativeID}
-        numberOfLines={numberOfLines}
-        ref={forwardedRef}
-        selectable={_selectable}
-        selectionColor={selectionColor}
-        style={processedStyle}
-      />
-    </TextAncestor.Provider>
+  // Return the highlight state and NativeText event handlers
+  return useMemo(
+    () => [isHighlighted, eventHandlersForText],
+    [isHighlighted, eventHandlersForText],
   );
-});
+}
 
-Text.displayName = 'Text';
+type NativePressableTextProps = $ReadOnly<{
+  textProps: NativeTextProps,
+  textPressabilityProps: TextPressabilityProps,
+}>;
 
 /**
- * Returns false until the first time `newValue` is true, after which this will
- * always return true. This is necessary to lazily initialize `Pressability` so
- * we do not eagerly create one for every pressable `Text` component.
+ * Wrap the NativeVirtualText component and initialize pressability.
+ *
+ * This logic is split out from the main Text component to enable the more
+ * expensive pressability logic to be only initialized when needed.
  */
-function useLazyInitialization(newValue: boolean): boolean {
-  const [oldValue, setValue] = useState(newValue);
-  if (!oldValue && newValue) {
-    setValue(newValue);
-  }
-  return oldValue;
-}
+const NativePressableVirtualText: component(
+  ref: React.RefSetter<TextForwardRef>,
+  ...props: NativePressableTextProps
+) = ({
+  ref: forwardedRef,
+  textProps,
+  textPressabilityProps,
+}: {
+  ref?: React.RefSetter<TextForwardRef>,
+  ...NativePressableTextProps,
+}) => {
+  const [isHighlighted, eventHandlersForText] = useTextPressability(
+    textPressabilityProps,
+  );
+
+  return (
+    <NativeVirtualText
+      {...textProps}
+      {...eventHandlersForText}
+      isHighlighted={isHighlighted}
+      isPressable={true}
+      ref={forwardedRef}
+    />
+  );
+};
+
+/**
+ * Wrap the NativeText component and initialize pressability.
+ *
+ * This logic is split out from the main Text component to enable the more
+ * expensive pressability logic to be only initialized when needed.
+ */
+const NativePressableText: component(
+  ref: React.RefSetter<TextForwardRef>,
+  ...props: NativePressableTextProps
+) = ({
+  ref: forwardedRef,
+  textProps,
+  textPressabilityProps,
+}: {
+  ref?: React.RefSetter<TextForwardRef>,
+  ...NativePressableTextProps,
+}) => {
+  const [isHighlighted, eventHandlersForText] = useTextPressability(
+    textPressabilityProps,
+  );
+
+  return (
+    <NativeText
+      {...textProps}
+      {...eventHandlersForText}
+      isHighlighted={isHighlighted}
+      isPressable={true}
+      ref={forwardedRef}
+    />
+  );
+};
 
 const userSelectToSelectableMap = {
   auto: true,
@@ -330,6 +545,6 @@ const verticalAlignToTextAlignVerticalMap = {
   top: 'top',
   bottom: 'bottom',
   middle: 'center',
-};
+} as const;
 
-module.exports = Text;
+export default TextImpl;

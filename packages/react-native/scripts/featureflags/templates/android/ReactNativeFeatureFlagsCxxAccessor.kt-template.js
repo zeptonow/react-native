@@ -30,7 +30,7 @@ ${DO_NOT_MODIFY_COMMENT}
 
 package com.facebook.react.internal.featureflags
 
-public class ReactNativeFeatureFlagsCxxAccessor : ReactNativeFeatureFlagsAccessor {
+internal class ReactNativeFeatureFlagsCxxAccessor : ReactNativeFeatureFlagsAccessor {
 ${Object.entries(definitions.common)
   .map(
     ([flagName, flagConfig]) =>
@@ -42,7 +42,12 @@ ${Object.entries(definitions.common)
 
 ${Object.entries(definitions.common)
   .map(
-    ([flagName, flagConfig]) => `  override fun ${flagName}(): Boolean {
+    ([
+      flagName,
+      flagConfig,
+    ]) => `  override fun ${flagName}(): ${getKotlinTypeFromDefaultValue(
+      flagConfig.defaultValue,
+    )} {
     var cached = ${flagName}Cache
     if (cached == null) {
       cached = ReactNativeFeatureFlagsCxxInterop.${flagName}()
@@ -57,6 +62,9 @@ ${Object.entries(definitions.common)
       ReactNativeFeatureFlagsCxxInterop.override(provider as Any)
 
   override fun dangerouslyReset(): Unit = ReactNativeFeatureFlagsCxxInterop.dangerouslyReset()
+
+  override fun dangerouslyForceOverride(provider: ReactNativeFeatureFlagsProvider): String? =
+      ReactNativeFeatureFlagsCxxInterop.dangerouslyForceOverride(provider as Any)
 }
 `);
 }

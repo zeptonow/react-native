@@ -4,9 +4,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
+
+import type {RNTesterModule} from '../../types/RNTesterTypes';
 
 import * as React from 'react';
 import {
@@ -48,7 +50,7 @@ function ContentPress() {
             setTimesPressed(current => current + 1);
           }}>
           {({pressed}) => (
-            <Text testID="one_press_me_button" style={styles.text}>
+            <Text testID="one_press_me_button" style={styles.button}>
               {pressed ? 'Pressed!' : 'Press Me'}
             </Text>
           )}
@@ -240,7 +242,7 @@ function PressableNativeMethods() {
         <Pressable ref={ref}>
           <View />
         </Pressable>
-        <Text>
+        <Text style={styles.button}>
           {status == null
             ? 'Missing Ref!'
             : status === true
@@ -321,6 +323,9 @@ const styles = StyleSheet.create({
   wrapperCustom: {
     borderRadius: 8,
     padding: 6,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   hitSlopWrapper: {
     backgroundColor: 'red',
@@ -359,12 +364,6 @@ const styles = StyleSheet.create({
   },
 });
 
-exports.displayName = (undefined: ?string);
-exports.description = 'Component for making views pressable.';
-exports.title = 'Pressable';
-exports.category = 'UI';
-exports.documentationURL = 'https://reactnative.dev/docs/pressable';
-
 const examples = [
   {
     title: 'Change content based on Press',
@@ -385,6 +384,33 @@ const examples = [
               styles.wrapperCustom,
             ]}>
             <Text style={styles.text}>Press Me</Text>
+          </Pressable>
+        </View>
+      );
+    },
+  },
+  {
+    title: 'Change child based on Press',
+    description:
+      ('You should be able to press the button, move your finger while pressing, and release it with the proper status updates.': string),
+    render(): React.Node {
+      return (
+        <View style={styles.row}>
+          <Pressable
+            style={({pressed}) => [
+              {
+                backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'white',
+              },
+              styles.wrapperCustom,
+            ]}>
+            {({pressed}) => (
+              <>
+                {pressed && <Text style={styles.text}>Pressed!</Text>}
+                {!pressed && (
+                  <Text style={styles.text}>Press me and move your finger</Text>
+                )}
+              </>
+            )}
           </Pressable>
         </View>
       );
@@ -445,6 +471,8 @@ const examples = [
             <Pressable
               android_ripple={{color: 'orange', borderless: true, radius: 30}}>
               <View>
+                {/* $FlowFixMe[incompatible-type] Natural Inference rollout.
+                 * See https://fburl.com/workplace/6291gfvu */}
                 <Text style={[styles.button, nativeFeedbackButton]}>
                   radius 30
                 </Text>
@@ -453,6 +481,8 @@ const examples = [
 
             <Pressable android_ripple={{borderless: true, radius: 150}}>
               <View>
+                {/* $FlowFixMe[incompatible-type] Natural Inference rollout.
+                 * See https://fburl.com/workplace/6291gfvu */}
                 <Text style={[styles.button, nativeFeedbackButton]}>
                   radius 150
                 </Text>
@@ -461,6 +491,8 @@ const examples = [
 
             <Pressable android_ripple={{borderless: false, radius: 70}}>
               <View style={styles.block}>
+                {/* $FlowFixMe[incompatible-type] Natural Inference rollout.
+                 * See https://fburl.com/workplace/6291gfvu */}
                 <Text style={[styles.button, nativeFeedbackButton]}>
                   radius 70, with border
                 </Text>
@@ -470,6 +502,8 @@ const examples = [
 
           <Pressable android_ripple={{borderless: false}}>
             <View style={styles.block}>
+              {/* $FlowFixMe[incompatible-type] Natural Inference rollout. See
+               * https://fburl.com/workplace/6291gfvu */}
               <Text style={[styles.button, nativeFeedbackButton]}>
                 with border, default color and radius
               </Text>
@@ -564,4 +598,13 @@ if (ReactNativeFeatureFlags.shouldPressibilityUseW3CPointerEventsForHover()) {
   });
 }
 
-exports.examples = examples;
+module.exports = ({
+  title: 'Pressable',
+  documentationURL: 'https://reactnative.dev/docs/pressable',
+  category: 'UI',
+  description: 'Component for making views pressable.',
+  displayName: 'Pressable',
+  /* $FlowFixMe[incompatible-cast] Natural Inference rollout. See
+   * https://fburl.com/workplace/6291gfvu */
+  examples,
+}: RNTesterModule);

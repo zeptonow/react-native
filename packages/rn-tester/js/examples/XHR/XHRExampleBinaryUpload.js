@@ -4,23 +4,23 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
 'use strict';
 
+import RNTesterText from '../../components/RNTesterText';
 import RNTOption from '../../components/RNTOption';
-
-const React = require('react');
-const {
+import React from 'react';
+import {
   Alert,
   Linking,
   StyleSheet,
   Text,
   TouchableHighlight,
   View,
-} = require('react-native');
+} from 'react-native';
 
 const BINARY_TYPES = {
   String,
@@ -75,7 +75,7 @@ class XHRExampleBinaryUpload extends React.Component<{...}, $FlowFixMeState> {
     Linking.openURL(url);
   }
 
-  state: $FlowFixMe | {|type: $TEMPORARY$string<'Uint8Array'>|} = {
+  state: $FlowFixMe | {type: 'Uint8Array'} = {
     type: 'Uint8Array',
   };
 
@@ -112,7 +112,9 @@ class XHRExampleBinaryUpload extends React.Component<{...}, $FlowFixMeState> {
     return (
       <View>
         <View style={styles.block}>
-          <Text style={styles.title}>Upload 255 bytes as ...</Text>
+          <RNTesterText style={styles.title}>
+            Upload 255 bytes as ...
+          </RNTesterText>
           <View style={styles.row}>
             {Object.keys(BINARY_TYPES).map(type => (
               <RNTOption

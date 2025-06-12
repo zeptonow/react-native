@@ -15,9 +15,9 @@ import type {
 
 import {type RNTesterTheme, RNTesterThemeContext} from './RNTesterTheme';
 import RNTPressableRow from './RNTPressableRow';
-import RNTTestDetails from './RNTTestDetails';
 import * as React from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import {useContext} from 'react';
+import {Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 const RNTesterBlock = require('./RNTesterBlock');
 const RNTesterExampleFilter = require('./RNTesterExampleFilter');
@@ -34,7 +34,7 @@ function getExampleTitle(title: $FlowFixMe, platform: $FlowFixMe) {
 
 export default function RNTesterModuleContainer(props: Props): React.Node {
   const {module, example, onExampleCardPress} = props;
-  const theme = React.useContext(RNTesterThemeContext);
+  const theme = useContext(RNTesterThemeContext);
   const renderExample = (e: $FlowFixMe, i: $FlowFixMe) => {
     // Filter platform-specific es
     const {title, description, platform, render: ExampleComponent} = e;
@@ -62,40 +62,33 @@ export default function RNTesterModuleContainer(props: Props): React.Node {
     );
   };
 
-  // TODO remove this case
-  if (module.examples.length === 1) {
-    const description = module.examples[0].description ?? module.description;
-    const ModuleSingleExample = module.examples[0].render;
-    return (
-      <>
-        <Header description={description} theme={theme} />
-        <ModuleSingleExample />
-      </>
-    );
-  }
-
   const filter = ({example: e, filterRegex}: $FlowFixMe) =>
     filterRegex.test(e.title);
 
+  const removeHiddenExamples = (ex: RNTesterModuleExample) =>
+    ex.hidden !== true;
   const sections = [
     {
-      data: module.examples,
+      data: module.examples.filter(removeHiddenExamples),
       title: 'EXAMPLES',
       key: 'e',
     },
   ];
 
-  return example != null ? (
+  const singleModule =
+    example ?? (module.examples.length === 1 ? module.examples[0] : null);
+
+  return singleModule != null ? (
     <>
-      <RNTTestDetails
-        title={example.title}
-        description={example.description}
-        expect={example.expect}
-        theme={theme}
-      />
-      <View style={styles.examplesContainer} testID="example-container">
-        <example.render />
-      </View>
+      {singleModule.scrollable === true ? (
+        <ScrollView style={styles.examplesContainer} testID="example-container">
+          <singleModule.render />
+        </ScrollView>
+      ) : (
+        <View style={styles.examplesContainer} testID="example-container">
+          <singleModule.render />
+        </View>
+      )}
     </>
   ) : (
     <>

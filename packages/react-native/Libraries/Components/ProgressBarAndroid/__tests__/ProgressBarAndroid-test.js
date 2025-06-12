@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
@@ -16,12 +15,12 @@ const ReactNativeTestTools = require('../../../Utilities/ReactNativeTestTools');
  * comment suppresses an error found when Flow v0.99 was deployed. To see the
  * error, delete this comment and run Flow. */
 // $FlowFixMe[missing-platform-support]
-const ProgressBarAndroid = require('../ProgressBarAndroid.android');
+const ProgressBarAndroid = require('../ProgressBarAndroid.android').default;
 const React = require('react');
 
 describe('<ProgressBarAndroid />', () => {
-  it('should render as expected', () => {
-    ReactNativeTestTools.expectRendersMatchingSnapshot(
+  it('should render as expected', async () => {
+    await ReactNativeTestTools.expectRendersMatchingSnapshot(
       'ProgressBarAndroid',
       () => <ProgressBarAndroid styleAttr="Horizontal" indeterminate={true} />,
       () => {

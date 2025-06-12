@@ -8,10 +8,8 @@
  */
 #pragma once
 
-#ifdef ANDROID
+#ifdef RN_SERIALIZABLE_STATE
 #include <folly/dynamic.h>
-#include <react/renderer/mapbuffer/MapBuffer.h>
-#include <react/renderer/mapbuffer/MapBufferBuilder.h>
 #endif
 
 namespace facebook::react {
@@ -20,13 +18,10 @@ class SampleNativeComponentState {
 public:
   SampleNativeComponentState() = default;
 
-#ifdef ANDROID
+#ifdef RN_SERIALIZABLE_STATE
   SampleNativeComponentState(SampleNativeComponentState const &previousState, folly::dynamic data){};
   folly::dynamic getDynamic() const {
     return {};
-  };
-  MapBuffer getMapBuffer() const {
-    return MapBufferBuilder::EMPTY();
   };
 #endif
 };

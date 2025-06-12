@@ -6,7 +6,6 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import type {
@@ -20,7 +19,6 @@ import type {DeviceMock} from './InspectorDeviceUtils';
 import {fetchJson} from './FetchUtils';
 import {createDebuggerMock} from './InspectorDebuggerUtils';
 import {createDeviceMock} from './InspectorDeviceUtils';
-import {dataUriToBuffer} from 'data-uri-to-buffer';
 import until from 'wait-for-expect';
 
 export type CdpMessageFromTarget = $ReadOnly<{
@@ -109,15 +107,6 @@ export async function sendFromDebuggerToTarget<Message: CdpMessageToTarget>(
   return receivedMessage.wrappedEvent;
 }
 
-export function parseJsonFromDataUri<T: JSONSerializable>(uri: string): T {
-  expect(uri).toMatch(/^data:/);
-  const parsedUri = dataUriToBuffer(uri);
-  expect(parsedUri.type).toBe('application/json');
-  return JSON.parse(
-    new TextDecoder(parsedUri.charset).decode(parsedUri.buffer),
-  );
-}
-
 export async function createAndConnectTarget(
   serverRef: $ReadOnly<{
     serverBaseUrl: string,
@@ -126,13 +115,25 @@ export async function createAndConnectTarget(
   }>,
   signal: AbortSignal,
   page: PageFromDevice,
+  {
+    debuggerHostHeader = null,
+    deviceId = null,
+    deviceHostHeader = null,
+  }: $ReadOnly<{
+    debuggerHostHeader?: ?string,
+    deviceId?: ?string,
+    deviceHostHeader?: ?string,
+  }> = {},
 ): Promise<{device: DeviceMock, debugger_: DebuggerMock}> {
   let device;
   let debugger_;
   try {
     device = await createDeviceMock(
-      `${serverRef.serverBaseWsUrl}/inspector/device?device=device&name=foo&app=bar`,
+      `${serverRef.serverBaseWsUrl}/inspector/device?device=${
+        deviceId ?? 'device' + Date.now()
+      }&name=foo&app=bar`,
       signal,
+      deviceHostHeader,
     );
     device.getPages.mockImplementation(() => [page]);
 
@@ -147,7 +148,11 @@ export async function createAndConnectTarget(
     const [{webSocketDebuggerUrl}] = pageList;
     expect(webSocketDebuggerUrl).toBeDefined();
 
-    debugger_ = await createDebuggerMock(webSocketDebuggerUrl, signal);
+    debugger_ = await createDebuggerMock(
+      webSocketDebuggerUrl,
+      signal,
+      debuggerHostHeader,
+    );
     await until(() => expect(device.connect).toBeCalled());
   } catch (e) {
     device?.close();

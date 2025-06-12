@@ -10,7 +10,11 @@
 
 import type {FeatureFlagDefinitions} from '../../types';
 
-import {DO_NOT_MODIFY_COMMENT, getCxxTypeFromDefaultValue} from '../../utils';
+import {
+  DO_NOT_MODIFY_COMMENT,
+  getCxxTypeFromDefaultValue,
+  getCxxValueFromDefaultValue,
+} from '../../utils';
 import signedsource from 'signedsource';
 
 export default function (definitions: FeatureFlagDefinitions): string {
@@ -43,14 +47,22 @@ namespace facebook::react {
 
 NativeReactNativeFeatureFlags::NativeReactNativeFeatureFlags(
     std::shared_ptr<CallInvoker> jsInvoker)
-    : NativeReactNativeFeatureFlagsCxxSpec(std::move(jsInvoker)) {}
+    : NativeReactNativeFeatureFlagsCxxSpecJSI(std::move(jsInvoker)) {}
 
 ${Object.entries(definitions.common)
-  .map(
-    ([flagName, flagConfig]) =>
-      `${getCxxTypeFromDefaultValue(
-        flagConfig.defaultValue,
-      )} NativeReactNativeFeatureFlags::${flagName}(
+  .map(([flagName, flagConfig]) =>
+    flagConfig.skipNativeAPI
+      ? `${getCxxTypeFromDefaultValue(
+          flagConfig.defaultValue,
+        )} NativeReactNativeFeatureFlags::${flagName}(
+    jsi::Runtime& /*runtime*/) {
+  // This flag is configured with \`skipNativeAPI: true\`.
+  // TODO(T204838867): Implement support for optional methods in C++ TM codegen and remove the method definition altogether.
+  return ${getCxxValueFromDefaultValue(flagConfig.defaultValue)};
+}`
+      : `${getCxxTypeFromDefaultValue(
+          flagConfig.defaultValue,
+        )} NativeReactNativeFeatureFlags::${flagName}(
     jsi::Runtime& /*runtime*/) {
   return ReactNativeFeatureFlags::${flagName}();
 }`,

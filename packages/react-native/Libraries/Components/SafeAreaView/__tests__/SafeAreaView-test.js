@@ -6,21 +6,20 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
 import SafeAreaView from '../SafeAreaView';
 
-const Text = require('../../../Text/Text');
+const Text = require('../../../Text/Text').default;
 const ReactNativeTestTools = require('../../../Utilities/ReactNativeTestTools');
-const View = require('../../View/View');
+const View = require('../../View/View').default;
 const React = require('react');
 
 describe('<SafeAreaView />', () => {
-  it('should render as expected', () => {
-    ReactNativeTestTools.expectRendersMatchingSnapshot(
+  it('should render as expected', async () => {
+    await ReactNativeTestTools.expectRendersMatchingSnapshot(
       'SafeAreaView',
       () => (
         <SafeAreaView>

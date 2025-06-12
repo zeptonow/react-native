@@ -7,11 +7,11 @@
 
 #include "RuntimeSchedulerBinding.h"
 #include <ReactCommon/SchedulerPriority.h>
+#include <react/timing/primitives.h>
 #include "RuntimeScheduler.h"
 #include "SchedulerPriorityUtils.h"
 #include "primitives.h"
 
-#include <chrono>
 #include <memory>
 #include <utility>
 
@@ -60,6 +60,11 @@ std::shared_ptr<RuntimeSchedulerBinding> RuntimeSchedulerBinding::getBinding(
 RuntimeSchedulerBinding::RuntimeSchedulerBinding(
     std::shared_ptr<RuntimeScheduler> runtimeScheduler)
     : runtimeScheduler_(std::move(runtimeScheduler)) {}
+
+std::shared_ptr<RuntimeScheduler>
+RuntimeSchedulerBinding::getRuntimeScheduler() noexcept {
+  return runtimeScheduler_;
+}
 
 jsi::Value RuntimeSchedulerBinding::get(
     jsi::Runtime& runtime,
@@ -139,10 +144,8 @@ jsi::Value RuntimeSchedulerBinding::get(
             const jsi::Value*,
             size_t) noexcept -> jsi::Value {
           auto now = runtimeScheduler_->now();
-          auto asDouble =
-              std::chrono::duration<double, std::milli>(now.time_since_epoch())
-                  .count();
-          return {asDouble};
+          auto domHighResTimeStamp = now.toDOMHighResTimeStamp();
+          return {domHighResTimeStamp};
         });
   }
 

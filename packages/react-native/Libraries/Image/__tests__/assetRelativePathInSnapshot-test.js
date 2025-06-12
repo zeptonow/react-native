@@ -4,22 +4,22 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
 jest.disableAutomock();
 
-const View = require('../../Components/View/View');
-const Image = require('../Image');
+const {create} = require('../../../jest/renderer');
+const View = require('../../Components/View/View').default;
+const Image = require('../Image').default;
 const React = require('react');
-const ReactTestRenderer = require('react-test-renderer');
 
-it('renders assets based on relative path', () => {
+it('renders assets based on relative path', async () => {
   expect(
-    ReactTestRenderer.create(
+    await create(
       <View>
         <Image source={require('./img/img1.png')} />
         <Image source={require('./img/img2.png')} />

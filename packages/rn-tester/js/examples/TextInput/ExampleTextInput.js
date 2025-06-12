@@ -6,19 +6,22 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 import {RNTesterThemeContext} from '../../components/RNTesterTheme';
-import React, {forwardRef, useContext} from 'react';
+import React, {useContext} from 'react';
 import {StyleSheet, TextInput} from 'react-native';
 
-const ExampleTextInput: React.AbstractComponent<
-  React.ElementConfig<typeof TextInput>,
-  $ReadOnly<{|
-    ...React.ElementRef<typeof TextInput>,
-  |}>,
-> = forwardRef((props, ref) => {
+const ExampleTextInput: component(
+  ref: React.RefSetter<null | React.ElementRef<typeof TextInput>>,
+  ...props: React.ElementConfig<typeof TextInput>
+) = ({
+  ref,
+  ...props
+}: {
+  ref?: React.RefSetter<null | React.ElementRef<typeof TextInput>>,
+  ...React.ElementConfig<typeof TextInput>,
+}) => {
   const theme = useContext(RNTesterThemeContext);
 
   return (
@@ -36,7 +39,7 @@ const ExampleTextInput: React.AbstractComponent<
       ]}
     />
   );
-});
+};
 
 const styles = StyleSheet.create({
   input: {

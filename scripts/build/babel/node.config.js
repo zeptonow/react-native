@@ -6,16 +6,13 @@
  *
  * @flow strict-local
  * @format
- * @oncall react_native
  */
 
-/*::
 import type {BabelCoreOptions} from '@babel/core';
-*/
 
 const TARGET_NODE_VERSION = '18';
 
-const config /*: BabelCoreOptions */ = {
+const config: BabelCoreOptions = {
   presets: [
     require.resolve('@babel/preset-flow'),
     [
@@ -28,6 +25,7 @@ const config /*: BabelCoreOptions */ = {
     ],
   ],
   plugins: [
+    require.resolve('babel-plugin-syntax-hermes-parser'),
     [
       require.resolve('babel-plugin-transform-define'),
       {

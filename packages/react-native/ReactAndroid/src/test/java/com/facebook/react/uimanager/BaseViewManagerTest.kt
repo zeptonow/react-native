@@ -7,11 +7,14 @@
 
 package com.facebook.react.uimanager
 
+import android.view.View.OnFocusChangeListener
 import com.facebook.react.R
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.BridgeReactContext
 import com.facebook.react.bridge.JavaOnlyArray
 import com.facebook.react.bridge.JavaOnlyMap
 import com.facebook.react.bridge.WritableArray
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlagsForTests
 import com.facebook.react.views.view.ReactViewGroup
 import com.facebook.react.views.view.ReactViewManager
 import java.util.Locale
@@ -22,6 +25,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.MockedStatic
 import org.mockito.Mockito
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
@@ -30,11 +36,15 @@ class BaseViewManagerTest {
   private lateinit var viewManager: BaseViewManager<ReactViewGroup, *>
   private lateinit var view: ReactViewGroup
   private lateinit var arguments: MockedStatic<Arguments>
+  private lateinit var themedReactContext: ThemedReactContext
 
   @Before
   fun setUp() {
+    ReactNativeFeatureFlagsForTests.setUp()
     viewManager = ReactViewManager()
-    view = ReactViewGroup(RuntimeEnvironment.getApplication())
+    val context = BridgeReactContext(RuntimeEnvironment.getApplication())
+    themedReactContext = ThemedReactContext(context, context, null, -1)
+    view = ReactViewGroup(themedReactContext)
     arguments = Mockito.mockStatic(Arguments::class.java)
     arguments.`when`<WritableArray> { Arguments.createMap() }.thenAnswer { JavaOnlyArray() }
   }
@@ -72,5 +82,15 @@ class BaseViewManagerTest {
   fun testRoleList() {
     viewManager.setRole(view, "list")
     Assertions.assertThat(view.getTag(R.id.role)).isEqualTo(ReactAccessibilityDelegate.Role.LIST)
+  }
+
+  @Test
+  fun testAddEventEmittersDoesNotOverrideExistingEventEmitters() {
+    val originalFocusListener = mock<OnFocusChangeListener>()
+    view.onFocusChangeListener = originalFocusListener
+    viewManager.addEventEmitters(themedReactContext, view)
+    Assertions.assertThat(view.onFocusChangeListener).isNotEqualTo(originalFocusListener)
+    view.onFocusChangeListener.onFocusChange(view, true)
+    verify(originalFocusListener, times(1)).onFocusChange(view, true)
   }
 }

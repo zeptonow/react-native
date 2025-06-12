@@ -4,12 +4,13 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
+import RNTesterText from './RNTesterText';
 import * as React from 'react';
-import {StyleSheet, Switch, Text, View} from 'react-native';
+import {StyleSheet, Switch, View} from 'react-native';
 
 type Props = {
   label: string,
@@ -34,7 +35,7 @@ const RNTesterSettingSwitchRow = ({
 }: Props): React.Node => {
   return (
     <View style={styles.row}>
-      <Text>{label}</Text>
+      <RNTesterText>{label}</RNTesterText>
       <Switch value={active} onValueChange={active ? onDisable : onEnable} />
     </View>
   );

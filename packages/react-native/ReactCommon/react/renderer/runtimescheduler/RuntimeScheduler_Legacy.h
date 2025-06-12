@@ -10,7 +10,6 @@
 #include <ReactCommon/RuntimeExecutor.h>
 #include <react/renderer/consistency/ShadowTreeRevisionConsistencyManager.h>
 #include <react/renderer/runtimescheduler/RuntimeScheduler.h>
-#include <react/renderer/runtimescheduler/RuntimeSchedulerClock.h>
 #include <react/renderer/runtimescheduler/Task.h>
 #include <atomic>
 #include <memory>
@@ -22,7 +21,8 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
  public:
   explicit RuntimeScheduler_Legacy(
       RuntimeExecutor runtimeExecutor,
-      std::function<RuntimeSchedulerTimePoint()> now);
+      std::function<HighResTimeStamp()> now,
+      RuntimeSchedulerTaskErrorHandler onTaskError);
 
   /*
    * Not copyable.
@@ -62,6 +62,24 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
       RawCallback&& callback) noexcept override;
 
   /*
+   * Adds a JavaScript callback to the idle queue with the given timeout.
+   * Triggers workloop if needed.
+   */
+  std::shared_ptr<Task> scheduleIdleTask(
+      jsi::Function&& callback,
+      HighResDuration timeout = timeoutForSchedulerPriority(
+          SchedulerPriority::IdlePriority)) noexcept override;
+
+  /*
+   * Adds a custom callback to the idle queue with the given timeout.
+   * Triggers workloop if needed.
+   */
+  std::shared_ptr<Task> scheduleIdleTask(
+      RawCallback&& callback,
+      HighResDuration timeout = timeoutForSchedulerPriority(
+          SchedulerPriority::IdlePriority)) noexcept override;
+
+  /*
    * Cancelled task will never be executed.
    *
    * Operates on JSI object.
@@ -75,7 +93,7 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
    *
    * Can be called from any thread.
    */
-  bool getShouldYield() const noexcept override;
+  bool getShouldYield() noexcept override;
 
   /*
    * Returns value of currently executed task. Designed to be called from React.
@@ -90,7 +108,7 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
    *
    * Thread synchronization must be enforced externally.
    */
-  RuntimeSchedulerTimePoint now() const noexcept override;
+  HighResTimeStamp now() const noexcept override;
 
   /*
    * Expired task is a task that should have been already executed. Designed to
@@ -103,11 +121,22 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
   void callExpiredTasks(jsi::Runtime& runtime) override;
 
   void scheduleRenderingUpdate(
+      SurfaceId surfaceId,
       RuntimeSchedulerRenderingUpdate&& renderingUpdate) override;
 
   void setShadowTreeRevisionConsistencyManager(
       ShadowTreeRevisionConsistencyManager*
           shadowTreeRevisionConsistencyManager) override;
+
+  void setPerformanceEntryReporter(
+      PerformanceEntryReporter* performanceEntryReporter) override;
+
+  void setEventTimingDelegate(
+      RuntimeSchedulerEventTimingDelegate* eventTimingDelegate) override;
+
+  void setIntersectionObserverDelegate(
+      RuntimeSchedulerIntersectionObserverDelegate*
+          intersectionObserverDelegate) override;
 
  private:
   std::priority_queue<
@@ -143,7 +172,7 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
    * Returns a time point representing the current point in time. May be called
    * from multiple threads.
    */
-  std::function<RuntimeSchedulerTimePoint()> now_;
+  std::function<HighResTimeStamp()> now_;
 
   /*
    * Flag indicating if callback on JavaScript queue has been
@@ -156,8 +185,10 @@ class RuntimeScheduler_Legacy final : public RuntimeSchedulerBase {
    */
   std::atomic_bool isPerformingWork_{false};
 
-  ShadowTreeRevisionConsistencyManager* shadowTreeRevisionConsistencyManager_{
-      nullptr};
+  std::atomic<ShadowTreeRevisionConsistencyManager*>
+      shadowTreeRevisionConsistencyManager_{nullptr};
+
+  RuntimeSchedulerTaskErrorHandler onTaskError_;
 };
 
 } // namespace facebook::react

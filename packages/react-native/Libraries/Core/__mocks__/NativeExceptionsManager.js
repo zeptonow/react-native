@@ -6,7 +6,6 @@
  *
  * @flow strict
  * @format
- * @oncall react_native
  */
 
 import typeof NativeExceptionsManager from '../NativeExceptionsManager';
@@ -14,7 +13,6 @@ import typeof NativeExceptionsManager from '../NativeExceptionsManager';
 export default ({
   reportFatalException: jest.fn(),
   reportSoftException: jest.fn(),
-  updateExceptionMessage: jest.fn(),
   dismissRedbox: jest.fn(),
   reportException: jest.fn(),
 }: NativeExceptionsManager);

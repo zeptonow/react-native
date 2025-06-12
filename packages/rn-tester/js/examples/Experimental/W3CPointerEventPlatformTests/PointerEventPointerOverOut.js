@@ -4,29 +4,25 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @format
  * @flow strict-local
+ * @format
  */
 
 import type {PlatformTestComponentBaseProps} from '../PlatformTest/RNTesterPlatformTestTypes';
-import type {ViewProps} from 'react-native/Libraries/Components/View/ViewPropTypes';
-import type {HostComponent} from 'react-native/Libraries/Renderer/shims/ReactNativeTypes';
-import type {PointerEvent} from 'react-native/Libraries/Types/CoreEventTypes';
+import type {HostInstance, PointerEvent} from 'react-native';
 
 import RNTesterPlatformTest from '../PlatformTest/RNTesterPlatformTest';
 import * as React from 'react';
 import {useCallback, useRef} from 'react';
 import {StyleSheet, View} from 'react-native';
 
-function getNativeTagFromHostElement(
-  elem: ?React.ElementRef<HostComponent<mixed>> | number,
-): ?number {
+function getNativeTagFromHostElement(elem: ?HostInstance | number): ?number {
   if (typeof elem === 'number') {
     return elem;
   }
   if (elem != null) {
     // $FlowExpectedError - accessing non-public property
-    return elem._nativeTag;
+    return elem.__nativeTag;
   }
   return undefined;
 }
@@ -60,34 +56,14 @@ function PointerEventPointerOverOutTestCase(
   const innerNativeTagRef = useRef(-1);
   const outerNativeTagRef = useRef(-1);
 
-  const handleInnerRefCallback = useCallback(
-    (
-      elem: null | React$ElementRef<
-        React$AbstractComponent<
-          ViewProps,
-          React.ElementRef<HostComponent<ViewProps>>,
-        >,
-      >,
-    ) => {
-      const nativeTag = getNativeTagFromHostElement(elem);
-      innerNativeTagRef.current = nativeTag != null ? nativeTag : -1;
-    },
-    [],
-  );
-  const handleOuterRefCallback = useCallback(
-    (
-      elem: null | React$ElementRef<
-        React$AbstractComponent<
-          ViewProps,
-          React.ElementRef<HostComponent<ViewProps>>,
-        >,
-      >,
-    ) => {
-      const nativeTag = getNativeTagFromHostElement(elem);
-      outerNativeTagRef.current = nativeTag != null ? nativeTag : -1;
-    },
-    [],
-  );
+  const handleInnerRefCallback = useCallback((elem: null | HostInstance) => {
+    const nativeTag = getNativeTagFromHostElement(elem);
+    innerNativeTagRef.current = nativeTag != null ? nativeTag : -1;
+  }, []);
+  const handleOuterRefCallback = useCallback((elem: null | HostInstance) => {
+    const nativeTag = getNativeTagFromHostElement(elem);
+    outerNativeTagRef.current = nativeTag != null ? nativeTag : -1;
+  }, []);
 
   const innerOverRef = useRef(0);
   const innerOutRef = useRef(0);

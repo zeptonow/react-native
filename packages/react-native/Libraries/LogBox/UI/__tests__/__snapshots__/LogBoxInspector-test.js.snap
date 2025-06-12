@@ -2,6 +2,7 @@
 
 exports[`LogBoxContainer should render fatal with selectedIndex 2 1`] = `
 <View
+  id="logbox_inspector"
   style={
     Object {
       "backgroundColor": "rgba(255, 255, 255, 1)",
@@ -30,6 +31,7 @@ exports[`LogBoxContainer should render fatal with selectedIndex 2 1`] = `
           "content": "Some kind of message (third)",
           "substitutions": Array [],
         },
+        "onNotificationPress": undefined,
         "stack": Array [],
         "symbolicated": Object {
           "error": null,
@@ -58,6 +60,7 @@ exports[`LogBoxContainer should render null with no logs 1`] = `null`;
 
 exports[`LogBoxContainer should render warning with selectedIndex 0 1`] = `
 <View
+  id="logbox_inspector"
   style={
     Object {
       "backgroundColor": "rgba(255, 255, 255, 1)",
@@ -86,6 +89,7 @@ exports[`LogBoxContainer should render warning with selectedIndex 0 1`] = `
           "content": "Some kind of message (first)",
           "substitutions": Array [],
         },
+        "onNotificationPress": undefined,
         "stack": Array [],
         "symbolicated": Object {
           "error": null,

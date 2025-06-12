@@ -4,58 +4,65 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
+ * @flow strict-local
  * @format
- * @oncall react_native
  */
 
 'use strict';
 
-const StatusBar = require('../StatusBar');
+const {create} = require('../../../../jest/renderer');
+const StatusBar = require('../StatusBar').default;
 const React = require('react');
-const ReactTestRenderer = require('react-test-renderer');
 
 describe('StatusBar', () => {
-  it('renders the statusbar', () => {
-    const component = ReactTestRenderer.create(<StatusBar />);
+  it('renders the statusbar', async () => {
+    const component = await create(<StatusBar />);
     expect(component).not.toBeNull();
   });
-  it('renders the statusbar animated enabled', () => {
-    const component = ReactTestRenderer.create(<StatusBar animated={true} />);
-    expect(component.toTree().props.animated).toBe(true);
+  it('renders the statusbar animated enabled', async () => {
+    const component = await create(<StatusBar animated={true} />);
+    expect(component.toTree()?.props.animated).toBe(true);
   });
-  it('renders the statusbar with fade transition on hide', () => {
-    const component = ReactTestRenderer.create(<StatusBar hidden={true} />);
-    expect(component.toTree().props.hidden).toBe(true);
+  it('renders the statusbar with fade transition on hide', async () => {
+    const component = await create(<StatusBar hidden={true} />);
+    expect(component.toTree()?.props.hidden).toBe(true);
   });
-  it('renders the statusbar with a background color', () => {
-    const component = ReactTestRenderer.create(
-      <StatusBar backgroundColor={'#fff'} />,
+  it('renders the statusbar with a background color', async () => {
+    const component = await create(<StatusBar backgroundColor={'#fff'} />);
+    expect(component.toTree()?.props.backgroundColor).toBe('#fff');
+    expect(
+      // $FlowFixMe[prop-missing]
+      component.toTree()?.type._defaultProps.backgroundColor.animated,
+    ).toBe(false);
+  });
+  it('renders the statusbar with default barStyle', async () => {
+    const component = await create(<StatusBar />);
+    StatusBar.setBarStyle('default');
+    // $FlowFixMe[prop-missing]
+    expect(component.toTree()?.type._defaultProps.barStyle.value).toBe(
+      'default',
     );
-    expect(component.toTree().props.backgroundColor).toBe('#fff');
-    expect(component.toTree().type._defaultProps.backgroundColor.animated).toBe(
+    // $FlowFixMe[prop-missing]
+    expect(component.toTree()?.type._defaultProps.barStyle.animated).toBe(
       false,
     );
   });
-  it('renders the statusbar with default barStyle', () => {
-    const component = ReactTestRenderer.create(<StatusBar />);
-    StatusBar.setBarStyle('default');
-    expect(component.toTree().type._defaultProps.barStyle.value).toBe(
-      'default',
-    );
-    expect(component.toTree().type._defaultProps.barStyle.animated).toBe(false);
-  });
-  it('renders the statusbar but should not be visible', () => {
-    const component = ReactTestRenderer.create(<StatusBar hidden={true} />);
-    expect(component.toTree().props.hidden).toBe(true);
-    expect(component.toTree().type._defaultProps.hidden.animated).toBe(false);
-    expect(component.toTree().type._defaultProps.hidden.transition).toBe(
+  it('renders the statusbar but should not be visible', async () => {
+    const component = await create(<StatusBar hidden={true} />);
+    expect(component.toTree()?.props.hidden).toBe(true);
+    // $FlowFixMe[prop-missing]
+    expect(component.toTree()?.type._defaultProps.hidden.animated).toBe(false);
+    // $FlowFixMe[prop-missing]
+    expect(component.toTree()?.type._defaultProps.hidden.transition).toBe(
       'fade',
     );
   });
-  it('renders the statusbar with networkActivityIndicatorVisible true', () => {
-    const component = ReactTestRenderer.create(
+  it('renders the statusbar with networkActivityIndicatorVisible true', async () => {
+    const component = await create(
       <StatusBar networkActivityIndicatorVisible={true} />,
     );
-    expect(component.toTree().props.networkActivityIndicatorVisible).toBe(true);
+    expect(component.toTree()?.props.networkActivityIndicatorVisible).toBe(
+      true,
+    );
   });
 });
