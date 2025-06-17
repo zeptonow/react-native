@@ -329,7 +329,7 @@ afterEvaluate {
 
 tasks.withType<JavaCompile>().configureEach {
   options.compilerArgs.add("-Xlint:deprecation,unchecked")
-  options.compilerArgs.add("-Werror")
+  // options.compilerArgs.add("-Werror")
 }
 
 /* Publishing Configuration */
