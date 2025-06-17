@@ -42,8 +42,9 @@ internal class AdditionAnimatedNode(
                 acc + animatedNode.getValue()
               } else {
                 //PATCH: COMMENTED
-               // throw JSApplicationCausedNativeException(
-               //     "Illegal node ID set as an input for Animated.Add node")
+                return Unit
+//               throw JSApplicationCausedNativeException(
+//                   "Illegal node ID set as an input for Animated.Add node")
               }
             })
   }
