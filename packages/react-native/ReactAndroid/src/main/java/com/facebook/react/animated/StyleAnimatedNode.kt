@@ -54,6 +54,7 @@ internal class StyleAnimatedNode(
       } else if (node is ObjectAnimatedNode) {
         node.collectViewUpdates(key, propsMap)
       } else {
+        return;
         // PATCH: COMMENTED OUT EXCEPTION THROWING
         // throw IllegalArgumentException(
         //     "Unsupported type of node used in property node ${node.javaClass}")
