@@ -128,6 +128,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
       // throw new JSApplicationIllegalArgumentException(
       // "createAnimatedNode: Animated node [" + tag + "] already exists");
+      return;
     }
     String type = config.getString("type");
     final AnimatedNode node;
@@ -177,6 +178,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
       // throw new JSApplicationIllegalArgumentException(
       // "updateAnimatedNode: Animated node [" + tag + "] does not exist");
+      return;
     }
 
     if (node instanceof AnimatedNodeWithUpdateableConfig) {
@@ -228,6 +230,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "setAnimatedNodeValue: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     stopAnimationsForNode(node);
     ((ValueAnimatedNode) node).nodeValue = value;
@@ -243,6 +246,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "setAnimatedNodeOffset: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     ((ValueAnimatedNode) node).offset = offset;
     mUpdatedNodes.put(tag, node);
@@ -257,6 +261,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "flattenAnimatedNodeOffset: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     ((ValueAnimatedNode) node).flattenOffset();
   }
@@ -270,6 +275,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "extractAnimatedNodeOffset: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     ((ValueAnimatedNode) node).extractOffset();
   }
@@ -283,6 +289,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // throw new JSApplicationIllegalArgumentException(
       // "startAnimatingNode: Animated node [" + animatedNodeTag + "] does not
       // exist");
+      return;
     }
     if (!(node instanceof ValueAnimatedNode)) {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
@@ -291,6 +298,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // + animatedNodeTag
       // + "] should be of type "
       // + ValueAnimatedNode.class.getName());
+      return;
     }
 
     final AnimationDriver existingDriver = mActiveAnimations.get(animationId);
@@ -576,6 +584,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // throw new JSApplicationIllegalArgumentException(
       // "Animated node connected to view [?] should be of type "
       // + PropsAnimatedNode.class.getName());
+      return;
     }
     PropsAnimatedNode propsAnimatedNode = (PropsAnimatedNode) node;
     propsAnimatedNode.restoreDefaultValues();
@@ -591,6 +600,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // throw new JSApplicationIllegalArgumentException(
       // "addAnimatedEventToView: Animated node with tag [" + nodeTag + "] does not
       // exist");
+      return;
     }
     if (!(node instanceof ValueAnimatedNode)) {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
@@ -601,6 +611,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // + eventHandlerName
       // + ") should be of type "
       // + ValueAnimatedNode.class.getName());
+      return;
     }
 
     ReadableArray path = eventMapping.getArray("nativeEventPath");
