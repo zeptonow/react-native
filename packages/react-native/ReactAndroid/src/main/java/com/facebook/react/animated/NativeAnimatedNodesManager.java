@@ -201,6 +201,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "startListeningToAnimatedNodeValue: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     ((ValueAnimatedNode) node).setValueListener(listener);
   }
@@ -471,6 +472,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "connectAnimatedNodeToView: Animated node with tag ["
       // + animatedNodeTag
       // + "] does not exist");
+      return;
     }
     if (!(node instanceof PropsAnimatedNode)) {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
@@ -479,6 +481,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // + viewTag
       // + "] should be of type "
       // + PropsAnimatedNode.class.getName());
+      return;
     }
     if (mReactApplicationContext == null) {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
@@ -486,6 +489,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "connectAnimatedNodeToView: Animated node could not be connected, no"
       // + " ReactApplicationContext: "
       // + viewTag);
+      return;
     }
 
     @Nullable
@@ -514,6 +518,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "disconnectAnimatedNodeFromView: Animated node with tag ["
       // + animatedNodeTag
       // + "] does not exist");
+      return;
     }
     if (!(node instanceof PropsAnimatedNode)) {
       // PATCH: COMMENTED OUT EXCEPTION THROWING
@@ -522,6 +527,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // + viewTag
       // + "] should be of type "
       // + PropsAnimatedNode.class.getName());
+      return;
     }
     PropsAnimatedNode propsAnimatedNode = (PropsAnimatedNode) node;
     propsAnimatedNode.disconnectFromView(viewTag);
