@@ -217,6 +217,7 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
       // "startListeningToAnimatedNodeValue: Animated node ["
       // + tag
       // + "] does not exist, or is not a 'value' node");
+      return;
     }
     ((ValueAnimatedNode) node).setValueListener(null);
   }
