@@ -546,8 +546,10 @@ public class NativeAnimatedNodesManager implements EventDispatcherListener {
   public void getValue(int tag, Callback callback) {
     AnimatedNode node = mAnimatedNodes.get(tag);
     if (node == null || !(node instanceof ValueAnimatedNode)) {
-      throw new JSApplicationIllegalArgumentException(
-          "getValue: Animated node with tag [" + tag + "] does not exist or is not a 'value' node");
+      // throw new JSApplicationIllegalArgumentException(
+      // "getValue: Animated node with tag [" + tag + "] does not exist or is not a
+      // 'value' node");
+      return;
     }
     double value = ((ValueAnimatedNode) node).getValue();
     if (callback != null) {
