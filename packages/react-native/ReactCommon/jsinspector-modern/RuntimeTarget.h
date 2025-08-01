@@ -135,12 +135,6 @@ class RuntimeTargetController {
   void notifyDebuggerSessionDestroyed();
 
   /**
-   * Registers the corresponding RuntimeTarget for Tracing: might enable some
-   * capabilities that will be later used in Tracing Profile.
-   */
-  void registerForTracing();
-
-  /**
    * Start sampling profiler for the corresponding RuntimeTarget.
    */
   void enableSamplingProfiler();
@@ -205,14 +199,8 @@ class JSINSPECTOR_EXPORT RuntimeTarget
    * \returns The new agent, or nullptr if the runtime is not debuggable.
    */
   std::shared_ptr<RuntimeAgent> createAgent(
-      FrontendChannel channel,
+      const FrontendChannel& channel,
       SessionState& sessionState);
-
-  /**
-   * Registers this Runtime for Tracing: might enable some
-   * capabilities that will be later used in Tracing Profile.
-   */
-  void registerForTracing();
 
   /**
    * Start sampling profiler for a particular JavaScript runtime.
@@ -248,7 +236,7 @@ class JSINSPECTOR_EXPORT RuntimeTarget
    * constructor should be executed before any user code is run).
    */
   RuntimeTarget(
-      const ExecutionContextDescription& executionContextDescription,
+      ExecutionContextDescription executionContextDescription,
       RuntimeTargetDelegate& delegate,
       RuntimeExecutor jsExecutor);
 

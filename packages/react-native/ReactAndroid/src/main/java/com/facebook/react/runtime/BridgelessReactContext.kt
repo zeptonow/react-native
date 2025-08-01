@@ -21,7 +21,6 @@ import com.facebook.react.bridge.NativeArray
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.UIManager
-import com.facebook.react.bridge.WritableNativeArray
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.common.annotations.UnstableReactNativeAPI
 import com.facebook.react.common.build.ReactBuildConfig
@@ -38,8 +37,9 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * This class is used instead of [ReactApplicationContext] when React Native is operating in
- * bridgeless mode. The purpose of this class is to override some methods on [ReactContext] that use
- * the [CatalystInstance], which doesn't exist in bridgeless mode.
+ * bridgeless mode. The purpose of this class is to override some methods on
+ * [com.facebook.react.bridge.ReactContext] that use the [CatalystInstance], which doesn't exist in
+ * bridgeless mode.
  */
 internal class BridgelessReactContext(context: Context, private val reactHost: ReactHostImpl) :
     ReactApplicationContext(context), EventDispatcherProvider {
@@ -56,7 +56,7 @@ internal class BridgelessReactContext(context: Context, private val reactHost: R
 
   override fun getSourceURL(): String? = sourceURLRef.get()
 
-  public fun setSourceURL(sourceURL: String?) {
+  fun setSourceURL(sourceURL: String?) {
     sourceURLRef.set(sourceURL)
   }
 
@@ -104,9 +104,8 @@ internal class BridgelessReactContext(context: Context, private val reactHost: R
       private val reactHost: ReactHostImpl,
       private val jsModuleInterface: Class<out JavaScriptModule>
   ) : InvocationHandler {
-    override fun invoke(proxy: Any, method: Method, args: Array<Any>?): Any? {
-      val jsArgs: NativeArray =
-          if (args != null) Arguments.fromJavaArgs(args) else WritableNativeArray()
+    override fun invoke(proxy: Any, method: Method, args: Array<Any?>): Any? {
+      val jsArgs: NativeArray = Arguments.fromJavaArgs(args)
       reactHost.callFunctionOnModule(
           JavaScriptModuleRegistry.getJSModuleName(jsModuleInterface), method.name, jsArgs)
       return null

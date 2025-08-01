@@ -10,7 +10,6 @@
 
 import * as EnvironmentOptions from './EnvironmentOptions';
 import {spawn, spawnSync} from 'child_process';
-import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 // $FlowExpectedError[untyped-import]
@@ -20,7 +19,8 @@ const BUCK_ISOLATION_DIR = 'react-native-fantom-buck-out';
 
 export enum HermesVariant {
   Hermes,
-  StaticHermes, // Static Hermes Stable
+  StaticHermesStable, // Static Hermes Stable
+  // This creates too many combinations and it's not worth the cost for now.
   StaticHermesExperimental, // Static Hermes Trunk
 }
 
@@ -30,7 +30,7 @@ export function getBuckOptionsForHermes(
   switch (variant) {
     case HermesVariant.Hermes:
       return [];
-    case HermesVariant.StaticHermes:
+    case HermesVariant.StaticHermesStable:
       return ['-c hermes.static_hermes=stable'];
     case HermesVariant.StaticHermesExperimental:
       return ['-c hermes.static_hermes=trunk'];
@@ -41,7 +41,7 @@ export function getHermesCompilerTarget(variant: HermesVariant): string {
   switch (variant) {
     case HermesVariant.Hermes:
       return '//xplat/hermes/tools/hermesc:hermesc';
-    case HermesVariant.StaticHermes:
+    case HermesVariant.StaticHermesStable:
       return '//xplat/shermes/stable:hermesc';
     case HermesVariant.StaticHermesExperimental:
       return '//xplat/static_h:hermesc';
@@ -95,16 +95,6 @@ export type SyncCommandResult = {
   stdout: string,
   stderr: string,
 };
-
-function isEmpty(value: ?string): boolean {
-  return value == null || value === '';
-}
-
-export function isRunningFromCI(): boolean {
-  return (
-    !isEmpty(process.env.SANDCASTLE) || !isEmpty(process.env.GITHUB_ACTIONS)
-  );
-}
 
 function maybeLogCommand(command: string, args: Array<string>): void {
   if (EnvironmentOptions.logCommands) {
@@ -253,10 +243,6 @@ function processArgsForBuck(args: Array<string>): Array<string> {
   }
 
   return args;
-}
-
-export function getShortHash(contents: string): string {
-  return crypto.createHash('md5').update(contents).digest('hex').slice(0, 8);
 }
 
 export function symbolicateStackTrace(

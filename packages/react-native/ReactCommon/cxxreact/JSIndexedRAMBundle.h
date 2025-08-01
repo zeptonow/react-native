@@ -7,6 +7,8 @@
 
 #pragma once
 
+#ifndef RCT_FIT_RM_OLD_RUNTIME
+
 #include <functional>
 #include <istream>
 #include <memory>
@@ -27,7 +29,7 @@ class RN_EXPORT JSIndexedRAMBundle : public JSModulesUnbundle {
   buildFactory();
 
   // Throws std::runtime_error on failure.
-  JSIndexedRAMBundle(const char* sourceURL);
+  explicit JSIndexedRAMBundle(const char* sourcePath);
   JSIndexedRAMBundle(std::unique_ptr<const JSBigString> script);
 
   // Throws std::runtime_error on failure.
@@ -66,8 +68,10 @@ class RN_EXPORT JSIndexedRAMBundle : public JSModulesUnbundle {
 
   mutable std::unique_ptr<std::istream> m_bundle;
   ModuleTable m_table;
-  size_t m_baseOffset;
+  size_t m_baseOffset{};
   std::unique_ptr<JSBigBufferString> m_startupCode;
 };
 
 } // namespace facebook::react
+
+#endif // RCT_FIT_RM_OLD_RUNTIME

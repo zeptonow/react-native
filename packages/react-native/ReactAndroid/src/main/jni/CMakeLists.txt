@@ -51,9 +51,7 @@ endfunction()
 # Third-party prefabs
 find_package(hermes-engine REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
-find_package(jsc-android REQUIRED CONFIG)
 add_library(fbjni ALIAS fbjni::fbjni)
-add_library(jsc ALIAS jsc-android::jsc)
 
 # Third-party downloaded targets
 add_react_third_party_ndk_subdir(glog)
@@ -71,7 +69,6 @@ add_react_common_subdir(logger)
 add_react_common_subdir(jsiexecutor)
 add_react_common_subdir(jsitooling)
 add_react_common_subdir(cxxreact)
-add_react_common_subdir(jsc)
 add_react_common_subdir(jsi)
 add_react_common_subdir(callinvoker)
 add_react_common_subdir(oscompat)
@@ -84,6 +81,7 @@ add_react_common_subdir(hermes/inspector-modern)
 add_react_common_subdir(react/renderer/runtimescheduler)
 add_react_common_subdir(react/debug)
 add_react_common_subdir(react/featureflags)
+add_react_common_subdir(react/performance/cdpmetrics)
 add_react_common_subdir(react/performance/timeline)
 add_react_common_subdir(react/renderer/animations)
 add_react_common_subdir(react/renderer/attributedstring)
@@ -140,8 +138,6 @@ add_react_android_subdir(src/main/jni/first-party/yogajni)
 add_react_android_subdir(src/main/jni/first-party/jni-lib-merge)
 add_react_android_subdir(src/main/jni/react/jni)
 add_react_android_subdir(src/main/jni/react/reactperflogger)
-add_react_android_subdir(src/main/jni/react/jscexecutor)
-add_react_android_subdir(src/main/jni/react/jsctooling)
 add_react_android_subdir(src/main/jni/react/turbomodule)
 add_react_android_subdir(src/main/jni/react/uimanager)
 add_react_android_subdir(src/main/jni/react/mapbuffer)
@@ -155,7 +151,6 @@ add_react_android_subdir(src/main/jni/react/hermes/instrumentation/)
 add_react_android_subdir(src/main/jni/react/runtime/cxxreactpackage)
 add_react_android_subdir(src/main/jni/react/runtime/jni)
 add_react_android_subdir(src/main/jni/react/runtime/hermes/jni)
-add_react_android_subdir(src/main/jni/react/runtime/jsc/jni)
 add_react_android_subdir(src/main/jni/react/devsupport)
 
 # SoMerging Utils
@@ -197,6 +192,7 @@ add_library(reactnative
           $<TARGET_OBJECTS:react_nativemodule_idlecallbacks>
           $<TARGET_OBJECTS:react_nativemodule_microtasks>
           $<TARGET_OBJECTS:react_newarchdefaults>
+          $<TARGET_OBJECTS:react_performance_cdpmetrics>
           $<TARGET_OBJECTS:react_performance_timeline>
           $<TARGET_OBJECTS:react_renderer_animations>
           $<TARGET_OBJECTS:react_renderer_attributedstring>
@@ -285,6 +281,7 @@ target_include_directories(reactnative
         $<TARGET_PROPERTY:react_nativemodule_idlecallbacks,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:react_nativemodule_microtasks,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:react_newarchdefaults,INTERFACE_INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:react_performance_cdpmetrics,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:react_performance_timeline,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:react_renderer_animations,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:react_renderer_attributedstring,INTERFACE_INCLUDE_DIRECTORIES>

@@ -45,7 +45,7 @@ class RuntimeAgent final {
   RuntimeAgent(
       FrontendChannel frontendChannel,
       RuntimeTargetController& targetController,
-      const ExecutionContextDescription& executionContextDescription,
+      ExecutionContextDescription executionContextDescription,
       SessionState& sessionState,
       std::unique_ptr<RuntimeAgentDelegate> delegate);
 
@@ -82,12 +82,6 @@ class RuntimeAgent final {
    * needed when constructin a new RuntimeAgent.
    */
   ExportedState getExportedState();
-
-  /**
-   * Registers the corresponding RuntimeTarget for Tracing: might enable some
-   * capabilities that will be later used in Tracing Profile.
-   */
-  void registerForTracing();
 
   /**
    * Start sampling profiler for the corresponding RuntimeTarget.

@@ -17,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.EditText;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
@@ -42,11 +41,9 @@ import com.facebook.react.uimanager.common.ViewUtil;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.facebook.react.uimanager.util.ReactFindViewUtil;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Utility class that handles the addition of a "role" for accessibility to either a View or
@@ -58,7 +55,8 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
   public static final HashMap<String, Integer> sActionIdMap = new HashMap<>();
 
   private static final String TAG = "ReactAccessibilityDelegate";
-  private static int sCounter = 0x3f000000;
+  private static int sCustomActionCounter = 0x3f000000;
+  private static final Map<String, Integer> sCustomActionIdMap = new HashMap<>();
   private static final int TIMEOUT_SEND_ACCESSIBILITY_EVENT = 200;
   private static final int SEND_EVENT = 1;
   private static final String delimiter = ", ";
@@ -69,7 +67,6 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
   private static final String STATE_CHECKED = "checked";
 
   private final View mView;
-  private List<View> mAxOrderViews;
   private Handler mHandler;
   private final HashMap<Integer, String> mAccessibilityActionsMap;
 
@@ -112,7 +109,6 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
     // problems, so leave it alone.
     if (!ViewCompat.hasAccessibilityDelegate(view)
         && (view.getTag(R.id.accessibility_role) != null
-            || view.getTag(R.id.accessibility_order) != null
             || view.getTag(R.id.accessibility_state) != null
             || view.getTag(R.id.accessibility_actions) != null
             || view.getTag(R.id.react_test_id) != null
@@ -138,7 +134,10 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
     return mView;
   }
 
-  private void populateAccessibilityNodeInfo(View host, AccessibilityNodeInfoCompat info) {
+  @Override
+  public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfoCompat info) {
+    super.onInitializeAccessibilityNodeInfo(host, info);
+
     if (host.getTag(R.id.accessibility_state_expanded) != null) {
       final boolean accessibilityStateExpanded =
           (boolean) host.getTag(R.id.accessibility_state_expanded);
@@ -195,14 +194,23 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
         if (!action.hasKey("name")) {
           throw new IllegalArgumentException("Unknown accessibility action.");
         }
-        int actionId = sCounter;
+
+        String actionName = action.getString("name");
         String actionLabel = action.hasKey("label") ? action.getString("label") : null;
-        if (sActionIdMap.containsKey(action.getString("name"))) {
-          actionId = sActionIdMap.get(action.getString("name"));
+        int actionId;
+
+        if (sActionIdMap.containsKey(actionName)) {
+          actionId = sActionIdMap.get(actionName);
         } else {
-          sCounter++;
+          if (sCustomActionIdMap.containsKey(actionName)) {
+            actionId = sCustomActionIdMap.get(actionName);
+          } else {
+            actionId = sCustomActionCounter++;
+            sCustomActionIdMap.put(actionName, actionId);
+          }
         }
-        mAccessibilityActionsMap.put(actionId, action.getString("name"));
+
+        mAccessibilityActionsMap.put(actionId, actionName);
         final AccessibilityActionCompat accessibilityAction =
             new AccessibilityActionCompat(actionId, actionLabel);
         info.addAction(accessibilityAction);
@@ -253,34 +261,6 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
     if (missingTextAndDescription && hasContentToAnnounce) {
       info.setContentDescription(getTalkbackDescription(host, info));
     }
-  }
-
-  @Override
-  public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfoCompat info) {
-    // If we set an accessibility order then all the focusing logic should go through our custom
-    // virtual view tree hierarchy and ignore the default path
-    ReadableArray axOrderIds = (ReadableArray) mView.getTag(R.id.accessibility_order);
-    if (axOrderIds != null && axOrderIds.size() != 0) {
-
-      Boolean isAxOrderDirty = (Boolean) mView.getTag(R.id.accessibility_order_dirty);
-      if (isAxOrderDirty != null && isAxOrderDirty) {
-        List<String> axOrderIdsList = new ArrayList<>();
-        Set<String> axOrderSet = new HashSet<>();
-        for (int i = 0; i < axOrderIds.size(); i++) {
-          String id = axOrderIds.getString(i);
-          if (id != null) {
-            axOrderIdsList.add(id);
-            axOrderSet.add(id);
-          }
-        }
-
-        mAxOrderViews = ReactAxOrderHelper.processAxOrderTree(mView, axOrderIdsList, axOrderSet);
-      }
-      return;
-    }
-
-    super.onInitializeAccessibilityNodeInfo(host, info);
-    populateAccessibilityNodeInfo(host, info);
   }
 
   @Override
@@ -453,65 +433,17 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
 
   @Override
   protected int getVirtualViewAt(float x, float y) {
-    if (mAxOrderViews == null) {
-      return HOST_ID;
-    }
-
-    int closestViewId = HOST_ID;
-    int smallestArea = Integer.MAX_VALUE;
-
-    for (int i = 0; i < mAxOrderViews.size(); i++) {
-      Rect bounds = ReactAxOrderHelper.getVirtualViewBounds(mView, mAxOrderViews.get(i));
-      if (bounds.contains((int) x, (int) y)) {
-        int area = bounds.width() * bounds.height();
-        if (area < smallestArea) {
-          smallestArea = area;
-          closestViewId = i;
-        }
-      }
-    }
-
-    return closestViewId;
+    return INVALID_ID;
   }
 
   @Override
-  protected void getVisibleVirtualViews(List<Integer> virtualViewIds) {
-    if (mAxOrderViews != null && !mAxOrderViews.isEmpty()) {
-      for (int i = 0; i < mAxOrderViews.size(); i++) {
-        virtualViewIds.add(i);
-      }
-    }
-  }
+  protected void getVisibleVirtualViews(List<Integer> virtualViewIds) {}
 
   @Override
   protected void onPopulateNodeForVirtualView(
       int virtualViewId, @NonNull AccessibilityNodeInfoCompat node) {
-    if (mView.getTag(R.id.accessibility_order) != null) {
-      if (mAxOrderViews.size() <= virtualViewId) {
-        node.setContentDescription("");
-        node.setBoundsInParent(new Rect(0, 0, 1, 1));
-        return;
-      }
-
-      View virtualView = mAxOrderViews.get(virtualViewId);
-
-      node.setContentDescription("");
-      if (virtualView == mView) {
-        if (mView.getContentDescription() != null) {
-          node.setContentDescription(mView.getContentDescription());
-        }
-
-        if (mView instanceof TextView && ((TextView) mView).getText() != null) {
-          node.setText(((TextView) mView).getText());
-        }
-
-        populateAccessibilityNodeInfo(mView, node);
-        node.setBoundsInParent(new Rect(0, 0, mView.getWidth(), mView.getHeight()));
-      } else {
-        node.setBoundsInParent(ReactAxOrderHelper.getVirtualViewBounds(mView, virtualView));
-      }
-      node.addChild(virtualView);
-    }
+    node.setContentDescription("");
+    node.setBoundsInParent(new Rect(0, 0, 1, 1));
   }
 
   @Override
@@ -522,10 +454,6 @@ public class ReactAccessibilityDelegate extends ExploreByTouchHelper {
 
   @Override
   public @Nullable AccessibilityNodeProviderCompat getAccessibilityNodeProvider(View host) {
-    if (mView.getTag(R.id.accessibility_order) != null) {
-      return super.getAccessibilityNodeProvider(host);
-    }
-
     return null;
   }
 

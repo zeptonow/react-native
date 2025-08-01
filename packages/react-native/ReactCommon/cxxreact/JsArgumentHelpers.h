@@ -20,8 +20,7 @@
 // jsArgAs... methods at the end simple to use should be most common, but any
 // non-detail method can be used when needed.
 
-namespace facebook {
-namespace xplat {
+namespace facebook::xplat {
 
 class JsArgumentException : public std::logic_error {
  public:
@@ -69,8 +68,8 @@ namespace detail {
 // only for types compatible with folly::dynamic.
 template <typename T>
 struct is_dynamic {
-  typedef typename std::
-      enable_if<std::is_assignable<folly::dynamic, T>::value, T>::type type;
+  using type = typename std::
+      enable_if<std::is_assignable<folly::dynamic, T>::value, T>::type;
 };
 
 } // end namespace detail
@@ -118,7 +117,6 @@ inline std::string jsArgAsString(const folly::dynamic& args, size_t n) {
   return jsArgN(args, n, &folly::dynamic::asString);
 }
 
-} // namespace xplat
-} // namespace facebook
+} // namespace facebook::xplat
 
 #include <cxxreact/JsArgumentHelpers-inl.h>

@@ -51,12 +51,13 @@ if (!schemaQuery.startsWith('@')) {
 const schemaQueryOutputFile = schemaQuery.replace(/^@/, '');
 const schemaQueryOutput = fs.readFileSync(schemaQueryOutputFile, 'utf8');
 
-const schemaFiles = schemaQueryOutput.split(' ');
 const modules: {
   [hasteModuleName: string]: NativeModuleSchema | ComponentSchema,
 } = {};
 const specNameToFile: {[hasteModuleName: string]: string} = {};
 
+const schemaFiles =
+  schemaQueryOutput.length > 0 ? schemaQueryOutput.split(' ') : [];
 for (const file of schemaFiles) {
   const schema: SchemaType = JSON.parse(fs.readFileSync(file, 'utf8'));
 
@@ -99,8 +100,15 @@ for (const file of schemaFiles) {
         }
       }
 
-      modules[specName] = module;
-      specNameToFile[specName] = file;
+      if (
+        module.type === 'Component' &&
+        schema.libraryName === 'FBReactNativeSpec'
+      ) {
+        continue;
+      } else {
+        modules[specName] = module;
+        specNameToFile[specName] = file;
+      }
     }
   }
 }

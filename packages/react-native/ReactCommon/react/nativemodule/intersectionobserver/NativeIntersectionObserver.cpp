@@ -11,7 +11,9 @@
 #include <react/renderer/uimanager/UIManagerBinding.h>
 #include <react/renderer/uimanager/primitives.h>
 
+#ifdef RN_DISABLE_OSS_PLUGIN_HEADER
 #include "Plugins.h"
+#endif
 
 std::shared_ptr<facebook::react::TurboModule>
 NativeIntersectionObserverModuleProvider(
@@ -46,21 +48,6 @@ ShadowNodeFamily::Shared shadowNodeFamilyFromToken(
 NativeIntersectionObserver::NativeIntersectionObserver(
     std::shared_ptr<CallInvoker> jsInvoker)
     : NativeIntersectionObserverCxxSpec(std::move(jsInvoker)) {}
-
-void NativeIntersectionObserver::observe(
-    jsi::Runtime& runtime,
-    NativeIntersectionObserverObserveOptions options) {
-  observeV2(runtime, std::move(options));
-}
-
-void NativeIntersectionObserver::unobserve(
-    jsi::Runtime& runtime,
-    IntersectionObserverObserverId intersectionObserverId,
-    ShadowNode::Shared targetShadowNode) {
-  auto token =
-      tokenFromShadowNodeFamily(runtime, targetShadowNode->getFamilyShared());
-  unobserveV2(runtime, intersectionObserverId, std::move(token));
-}
 
 jsi::Object NativeIntersectionObserver::observeV2(
     jsi::Runtime& runtime,

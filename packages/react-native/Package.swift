@@ -13,7 +13,7 @@ import PackageDescription
  To build React Native, you need to follow these steps:
  1. inside the `react-native` root folder, run `yarn install`
  2. `cd packages/react-native`
- 3. `RN_DEP_VERSION=nightly HERMES_VERSION=nightly node scripts/prebuild-ios`
+ 3. `RN_DEP_VERSION=nightly HERMES_VERSION=nightly node scripts/ios-prebuild`
  4. `open Package.swift`
  5. Build in Xcode.
 
@@ -166,7 +166,7 @@ let reactJsInspector = RNTarget(
   name: .reactJsInspector,
   path: "ReactCommon/jsinspector-modern",
   excludedPaths: ["tracing", "network", "tests"],
-  dependencies: [.reactNativeDependencies, .reactFeatureFlags, .jsi, .reactJsInspectorTracing, .reactJsInspectorNetwork, .reactRuntimeExecutor],
+  dependencies: [.reactNativeDependencies, .reactFeatureFlags, .jsi, .reactJsInspectorTracing, .reactJsInspectorNetwork, .reactRuntimeExecutor, .reactPerfLogger],
   defines: [
     CXXSetting.define("REACT_NATIVE_DEBUGGER_ENABLED", to: "1", .when(configuration: BuildConfiguration.debug)),
     CXXSetting.define("REACT_NATIVE_DEBUGGER_ENABLED_DEVONLY", to: "1", .when(configuration: BuildConfiguration.debug)),
@@ -178,7 +178,7 @@ let reactCxxReact = RNTarget(
   name: .reactCxxReact,
   path: "ReactCommon/cxxreact",
   searchPaths: [CallInvokerPath],
-  excludedPaths: ["tests", "SampleCXXModule.cpp"],
+  excludedPaths: ["tests"],
   dependencies: [.reactNativeDependencies, .jsi, .reactPerfLogger, .logger, .reactDebug, .reactJsInspector]
 
 )
@@ -206,6 +206,14 @@ let reactHermes = RNTarget(
   defines: [
     CXXSetting.define("HERMES_ENABLE_DEBUGGER", to: "1", .when(configuration: BuildConfiguration.debug))
   ]
+)
+
+/// React-performancecdpmetrics.podspec
+let reactPerformanceCdpMetrics = RNTarget(
+  name: .reactPerformanceCdpMetrics,
+  path: "ReactCommon/react/performance/cdpmetrics",
+  excludedPaths: ["tests"],
+  dependencies: [.reactNativeDependencies, .reactCxxReact, .jsi, .reactPerformanceTimeline, .reactRuntimeExecutor]
 )
 
 /// React-performancetimeline.podspec
@@ -336,7 +344,10 @@ let reactRuntime = RNTarget(
   name: .reactRuntime,
   path: "ReactCommon/react/runtime",
   excludedPaths: ["tests", "iostests", "platform"],
-  dependencies: [.reactNativeDependencies, .jsi, .reactJsiExecutor, .reactCxxReact, .reactJsErrorHandler, .reactPerformanceTimeline, .reactUtils, .reactFeatureFlags, .reactJsInspector, .reactJsiTooling, .reactHermes, .reactRuntimeScheduler, .hermesPrebuilt]
+  dependencies: [.reactNativeDependencies, .jsi, .reactJsiExecutor, .reactCxxReact, .reactJsErrorHandler, .reactPerformanceTimeline, .reactUtils, .reactFeatureFlags, .reactJsInspector, .reactJsiTooling, .reactHermes, .reactRuntimeScheduler, .hermesPrebuilt],
+  defines: [
+    CXXSetting.define("HERMES_ENABLE_DEBUGGER", to: "1", .when(configuration: BuildConfiguration.debug))
+  ]
 )
 
 /// React-runtimeApple.podspec
@@ -394,6 +405,8 @@ let reactFabric = RNTarget(
     "components/textinput",
     "components/textinput/platform/ios/",
     "components/unimplementedview",
+    "components/virtualview",
+    "components/virtualviewexperimental",
     "components/root/tests",
   ],
   dependencies: [.reactNativeDependencies, .reactJsiExecutor, .rctTypesafety, .reactTurboModuleCore, .jsi, .logger, .reactDebug, .reactFeatureFlags, .reactUtils, .reactRuntimeScheduler, .reactCxxReact, .reactRendererDebug, .reactGraphics, .yoga],
@@ -412,6 +425,8 @@ let reactFabricComponents = RNTarget(
   name: .reactFabricComponents,
   path: "ReactCommon/react/renderer",
   excludedPaths: [
+    "components/modal/platform/android",
+    "components/modal/platform/cxx",
     "components/view/platform/android",
     "components/view/platform/windows",
     "components/view/platform/macos",
@@ -427,7 +442,7 @@ let reactFabricComponents = RNTarget(
     "conponents/rncore", // this was the old folder where RN Core Components were generated. If you ran codegen in the past, you might have some files in it that might make the build fail.
   ],
   dependencies: [.reactNativeDependencies, .reactCore, .reactJsiExecutor, .reactTurboModuleCore, .jsi, .logger, .reactDebug, .reactFeatureFlags, .reactUtils, .reactRuntimeScheduler, .reactCxxReact, .yoga, .reactRendererDebug, .reactGraphics, .reactFabric, .reactTurboModuleBridging],
-  sources: ["components/inputaccessory", "components/modal", "components/safeareaview", "components/text", "components/text/platform/cxx", "components/textinput", "components/textinput/platform/ios/", "components/unimplementedview", "textlayoutmanager", "textlayoutmanager/platform/ios"]
+  sources: ["components/inputaccessory", "components/modal", "components/safeareaview", "components/text", "components/text/platform/cxx", "components/textinput", "components/textinput/platform/ios/", "components/unimplementedview", "components/virtualview", "components/virtualviewexperimental", "textlayoutmanager", "textlayoutmanager/platform/ios"]
 )
 
 /// React-FabricImage.podspec
@@ -489,6 +504,14 @@ let reactRCTNetwork = RNTarget(
   dependencies: [.yoga, .jsi, .reactTurboModuleCore]
 )
 
+/// React-RCTVibration.podspec
+let reactRCTVibration = RNTarget(
+  name: .reactRCTVibration,
+  path: "Libraries/Vibration",
+  linkedFrameworks: ["AudioToolbox"],
+  dependencies: [.yoga, .jsi, .reactTurboModuleCore]
+)
+
 /// React-RCTAppDelegate.podspec
 let reactAppDelegate = RNTarget(
   name: .reactAppDelegate,
@@ -539,6 +562,7 @@ let targets = [
   reactNativeDependencies,
   hermesPrebuilt,
   reactJsiTooling,
+  reactPerformanceCdpMetrics,
   reactPerformanceTimeline,
   reactRuntimeScheduler,
   rctTypesafety,
@@ -554,6 +578,7 @@ let targets = [
   reactRCTText,
   reactRCTBlob,
   reactRCTNetwork,
+  reactRCTVibration,
   reactRCTLinking,
   reactCoreModules,
   reactTurboModuleBridging,
@@ -708,6 +733,7 @@ extension String {
   static let hermesPrebuilt = "hermes-prebuilt"
 
   static let reactJsiTooling = "React-jsitooling"
+  static let reactPerformanceCdpMetrics = "React-performancecdpmetrics"
   static let reactPerformanceTimeline = "React-performancetimeline"
   static let reactRuntimeScheduler = "React-runtimescheduler"
   static let rctTypesafety = "RCTTypesafety"
@@ -725,6 +751,7 @@ extension String {
   static let reactRCTText = "React-RCTText"
   static let reactRCTBlob = "React-RCTBlob"
   static let reactRCTNetwork = "React-RCTNetwork"
+  static let reactRCTVibration = "React-RCTVibration"
   static let reactRCTActionSheet = "React-RCTActionSheet" // Empty target
   static let reactRCTLinking = "React-RCTLinking"
   static let reactCoreModules = "React-CoreModules"

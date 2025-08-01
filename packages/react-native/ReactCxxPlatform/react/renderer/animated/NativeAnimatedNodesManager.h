@@ -78,7 +78,7 @@ class NativeAnimatedNodesManager {
 
   std::optional<double> getValue(Tag tag) noexcept;
 
-  // graph
+#pragma mark - Graph
 
   void createAnimatedNode(Tag tag, const folly::dynamic& config) noexcept;
 
@@ -96,13 +96,19 @@ class NativeAnimatedNodesManager {
 
   void setAnimatedNodeValue(Tag tag, double value);
 
-  // drivers
+  void flattenAnimatedNodeOffset(Tag tag);
+
+  void extractAnimatedNodeOffsetOp(Tag tag);
+
+  void setAnimatedNodeOffset(Tag tag, double offset);
+
+#pragma mark - Drivers
 
   void startAnimatingNode(
       int animationId,
       Tag animatedNodeTag,
-      const folly::dynamic& config,
-      const std::optional<AnimationEndCallback>& endCallback) noexcept;
+      folly::dynamic config,
+      std::optional<AnimationEndCallback> endCallback) noexcept;
 
   void stopAnimation(
       int animationId,
@@ -121,7 +127,8 @@ class NativeAnimatedNodesManager {
   std::shared_ptr<EventEmitterListener> getEventEmitterListener() noexcept {
     return ensureEventEmitterListener();
   }
-  // listeners
+
+#pragma mark - Listeners
 
   void startListeningToAnimatedNodeValue(
       Tag tag,
@@ -168,7 +175,11 @@ class NativeAnimatedNodesManager {
   void updateNodes(
       const std::set<int>& finishedAnimationValueNodes = {}) noexcept;
 
-  folly::dynamic managedProps(Tag tag) noexcept;
+  folly::dynamic managedProps(Tag tag) const noexcept;
+
+  bool hasManagedProps() const noexcept;
+
+  void onManagedPropsRemoved(Tag tag) noexcept;
 
   bool isOnRenderThread() const noexcept;
 
@@ -202,16 +213,27 @@ class NativeAnimatedNodesManager {
       eventDrivers_;
   std::unordered_set<Tag> updatedNodeTags_;
 
-  std::mutex connectedAnimatedNodesMutex_;
+  mutable std::mutex connectedAnimatedNodesMutex_;
 
   std::mutex uiTasksMutex_;
   std::vector<UiTask> operations_;
 
-  bool isGestureAnimationInProgress_{false};
+  /*
+   * Tracks whether a event-driven animation is currently in progress.
+   * This is set to true when an event handler triggers an animation,
+   * and reset to false when UI tick results in no changes to UI from
+   * animations.
+   */
+  bool isEventAnimationInProgress_{false};
 
   // React context required to commit props onto Component View
   DirectManipulationCallback directManipulationCallback_;
   FabricCommitCallback fabricCommitCallback_;
+
+  /*
+   * Tracks whether the render callback loop for animations is currently active.
+   */
+  std::atomic_bool isRenderCallbackStarted_{false};
   StartOnRenderCallback startOnRenderCallback_;
   StopOnRenderCallback stopOnRenderCallback_;
 
@@ -219,6 +241,16 @@ class NativeAnimatedNodesManager {
 
   std::unordered_map<Tag, folly::dynamic> updateViewProps_{};
   std::unordered_map<Tag, folly::dynamic> updateViewPropsDirect_{};
+
+  /*
+   * Sometimes a view is not longer connected to a PropsAnimatedNode, but
+   * NativeAnimated has previously changed the view's props via direct
+   * manipulation, we use unsyncedDirectViewProps_ to keep track of those
+   * props, to make sure later Fabric commits will not override direct
+   * manipulation result on this view.
+   */
+  mutable std::mutex unsyncedDirectViewPropsMutex_;
+  std::unordered_map<Tag, folly::dynamic> unsyncedDirectViewProps_{};
 
   int animatedGraphBFSColor_ = 0;
 #ifdef REACT_NATIVE_DEBUG

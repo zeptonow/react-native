@@ -308,6 +308,7 @@ using namespace facebook;
            cmd:_cmd];
 }
 
+#ifndef RCT_FIT_RM_OLD_RUNTIME
 - (void)registerModuleForFrameUpdates:(id<RCTBridgeModule>)module withModuleData:(RCTModuleData *)moduleData
 {
   [self logError:@"This method is not supported. Nooping" cmd:_cmd];
@@ -318,6 +319,7 @@ using namespace facebook;
   [self logError:@"This method is not supported. Returning nil." cmd:_cmd];
   return nil;
 }
+#endif // RCT_FIT_RM_OLD_RUNTIME
 
 - (void)registerAdditionalModuleClasses:(NSArray<Class> *)newModules
 {
@@ -443,7 +445,7 @@ using namespace facebook;
                cmd:_cmd];
   UIView *view = [_viewRegistry viewForReactTag:reactTag] ? [_viewRegistry viewForReactTag:reactTag]
                                                           : [_legacyViewRegistry objectForKey:reactTag];
-  return [RCTUIManager paperViewOrCurrentView:view];
+  return RCTPaperViewOrCurrentView(view);
 }
 
 - (void)addUIBlock:(RCTViewManagerUIBlock)block

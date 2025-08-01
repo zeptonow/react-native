@@ -11,34 +11,51 @@
 import type {FeatureFlagValue} from '../../../packages/react-native/scripts/featureflags/types';
 import type {FantomTestConfig} from '../runner/getFantomTestConfigs';
 import type {HermesVariant} from '../runner/utils';
+import type {PartialFantomTestConfig} from './getFantomTestConfigs';
 
-import {
-  DEFAULT_FEATURE_FLAGS,
-  DEFAULT_HERMES_VARIANT,
-  DEFAULT_MODE,
-  FantomTestConfigHermesVariant,
-  FantomTestConfigMode,
-} from '../runner/getFantomTestConfigs';
+import {FantomTestConfigHermesVariant} from '../runner/getFantomTestConfigs';
+import {getOverrides} from './getFantomTestConfigs';
 
-function formatFantomMode(mode: FantomTestConfigMode): string {
-  switch (mode) {
-    case FantomTestConfigMode.DevelopmentWithSource:
-      return 'mode 🐛';
-    case FantomTestConfigMode.DevelopmentWithBytecode:
-      return 'mode 🐛🔢';
-    case FantomTestConfigMode.Optimized:
-      return 'mode 🚀';
+function formatModes(overrides: PartialFantomTestConfig) {
+  const parts = [];
+
+  if (
+    overrides.isNativeOptimized === false &&
+    overrides.isJsOptimized === false &&
+    overrides.isJsBytecode === false
+  ) {
+    return ['mode 🐛'];
+  } else if (
+    overrides.isNativeOptimized === true &&
+    overrides.isJsOptimized === true &&
+    overrides.isJsBytecode === true
+  ) {
+    return ['mode 🚀'];
   }
+
+  if (overrides.isNativeOptimized != null) {
+    parts.push(overrides.isNativeOptimized ? 'native 🚀' : 'native 🐛');
+  }
+
+  if (overrides.isJsOptimized != null) {
+    parts.push(overrides.isJsOptimized ? 'js 🚀' : 'js 🐛');
+  }
+
+  if (overrides.isJsBytecode != null && overrides.isJsBytecode) {
+    parts.push('bytecode');
+  }
+
+  return parts;
 }
 
 function formatFantomHermesVariant(hermesVariant: HermesVariant): string {
   switch (hermesVariant) {
     case FantomTestConfigHermesVariant.Hermes:
       return 'hermes';
-    case FantomTestConfigHermesVariant.StaticHermes:
-      return 'hermes 🆕';
+    case FantomTestConfigHermesVariant.StaticHermesStable:
+      return 'shermes 🆕';
     case FantomTestConfigHermesVariant.StaticHermesExperimental:
-      return 'hermes 🧪';
+      return 'shermes 🧪';
   }
 }
 
@@ -54,22 +71,23 @@ function formatFantomFeatureFlag(
 }
 
 export default function formatFantomConfig(config: FantomTestConfig): string {
+  const overrides = getOverrides(config);
   const parts = [];
 
-  if (config.mode !== DEFAULT_MODE) {
-    parts.push(formatFantomMode(config.mode));
+  parts.push(...formatModes(overrides));
+
+  if (overrides.hermesVariant) {
+    parts.push(formatFantomHermesVariant(overrides.hermesVariant));
   }
 
-  if (config.hermesVariant !== DEFAULT_HERMES_VARIANT) {
-    parts.push(formatFantomHermesVariant(config.hermesVariant));
-  }
-
-  for (const flagType of ['common', 'jsOnly', 'reactInternal'] as const) {
-    for (const [flagName, flagValue] of Object.entries(
-      config.flags[flagType],
-    )) {
-      if (flagValue !== DEFAULT_FEATURE_FLAGS[flagType][flagName]) {
-        parts.push(formatFantomFeatureFlag(flagName, flagValue));
+  if (overrides.flags) {
+    for (const flagType of ['common', 'jsOnly', 'reactInternal'] as const) {
+      if (overrides.flags[flagType]) {
+        for (const [flagName, flagValue] of Object.entries(
+          overrides.flags[flagType],
+        )) {
+          parts.push(formatFantomFeatureFlag(flagName, flagValue));
+        }
       }
     }
   }
